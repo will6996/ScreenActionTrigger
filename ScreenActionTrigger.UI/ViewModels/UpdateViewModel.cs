@@ -58,8 +58,15 @@ public sealed partial class UpdateViewModel : ObservableObject
 
             if (!info.IsUpdateAvailable)
             {
-                UpdateMessage    = $"Você está na versão mais recente ({CurrentVersion}).";
-                UpdateAvailable  = false;
+                UpdateMessage   = $"Você está na versão mais recente ({CurrentVersion}).";
+                UpdateAvailable = false;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(info.DownloadUrl))
+            {
+                UpdateMessage   = $"v{info.LatestVersion} disponível, mas o link de download não foi encontrado.";
+                UpdateAvailable = false;
                 return;
             }
 

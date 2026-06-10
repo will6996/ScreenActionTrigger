@@ -34,23 +34,59 @@ public sealed class UpdateService : IUpdateService, IDisposable
         _http.DefaultRequestHeaders.Add("User-Agent", "ScreenActionTrigger-Updater/1.0");
     }
 
-    // ─── Verificar: version.json → fallback GitHub Releases API ───────────────
+    // ─── Verificar: version.json + GitHub Releases API (usa a MAIS NOVA) ─────
     public async Task<UpdateInfo?> CheckAsync(CancellationToken ct = default)
     {
         var fromManifest = await TryCheckManifestAsync(ct);
-        if (fromManifest is not null)
-            return fromManifest;
+        var fromGitHub   = await CheckViaGitHubAsync(GitHubOwner, GitHubRepo, ct);
 
-        _logger.LogInformation("version.json indisponível — tentando GitHub Releases API");
-        return await CheckViaGitHubAsync(GitHubOwner, GitHubRepo, ct);
+        if (fromManifest is null) return fromGitHub;
+        if (fromGitHub   is null) return fromManifest;
+
+        // raw.githubusercontent.com pode ficar em cache (ex.: 1.1.4) — GitHub API é mais confiável
+        if (fromGitHub.LatestVersion > fromManifest.LatestVersion)
+        {
+            _logger.LogWarning(
+                "version.json desatualizado ({Manifest} < {GitHub}) — usando GitHub Releases",
+                fromManifest.LatestVersion, fromGitHub.LatestVersion);
+
+            return MergeUpdateInfo(fromManifest, fromGitHub);
+        }
+
+        return fromManifest;
+    }
+
+    private static UpdateInfo MergeUpdateInfo(UpdateInfo manifest, UpdateInfo github)
+    {
+        return new UpdateInfo
+        {
+            CurrentVersion = github.CurrentVersion,
+            LatestVersion  = github.LatestVersion,
+            DownloadUrl    = string.IsNullOrWhiteSpace(github.DownloadUrl)
+                ? manifest.DownloadUrl : github.DownloadUrl,
+            ReleaseNotes   = string.IsNullOrWhiteSpace(github.ReleaseNotes)
+                ? manifest.ReleaseNotes : github.ReleaseNotes,
+            IsMandatory    = manifest.IsMandatory || github.IsMandatory,
+            FileSizeBytes  = github.FileSizeBytes > 0 ? github.FileSizeBytes : manifest.FileSizeBytes,
+            ReleasedAt     = github.ReleasedAt > manifest.ReleasedAt ? github.ReleasedAt : manifest.ReleasedAt
+        };
     }
 
     private async Task<UpdateInfo?> TryCheckManifestAsync(CancellationToken ct)
     {
         try
         {
-            _logger.LogInformation("Verificando atualizações em {Url}", VersionManifestUrl);
-            var json = await _http.GetStringAsync(VersionManifestUrl, ct);
+            var url = $"{VersionManifestUrl.TrimEnd('?')}?_={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+            _logger.LogInformation("Verificando atualizações em {Url}", url);
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue
+            {
+                NoCache = true, NoStore = true, MustRevalidate = true
+            };
+            using var response = await _http.SendAsync(request, ct);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync(ct);
 
             var manifest = JsonSerializer.Deserialize<RemoteVersionManifest>(json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
