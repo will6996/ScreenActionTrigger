@@ -1,0 +1,269 @@
+<UserControl x:Class="ScreenActionTrigger.UI.Views.SequencesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:ScreenActionTrigger.Core.Models;assembly=ScreenActionTrigger.Core"
+             Background="{StaticResource BgBaseBrush}">
+
+    <Grid Margin="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="240"/>
+            <ColumnDefinition Width="6"/>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="6"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Sequências -->
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="SEQUÊNCIAS" Style="{StaticResource SectionTitleStyle}"/>
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                <Button Content="+ Nova" Style="{StaticResource AccentButtonStyle}"
+                        Command="{Binding AddSequenceCommand}" Margin="0,0,6,0"/>
+                <CheckBox Content="Desabilitadas" IsChecked="{Binding ShowDisabled}"
+                          VerticalAlignment="Center"/>
+            </StackPanel>
+            <ListView Grid.Row="2" ItemsSource="{Binding SequencesView}"
+                      SelectedItem="{Binding SelectedSequence}">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                            <TextBlock FontSize="10" Foreground="{StaticResource TextMutedBrush}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0} passo(s)">
+                                        <Binding Path="Steps.Count"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Grid>
+
+        <GridSplitter Grid.Column="1" Width="6"/>
+
+        <!-- Passos -->
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="PASSOS" Style="{StaticResource SectionTitleStyle}"/>
+            <Button Grid.Row="1" Content="+ Passo" Style="{StaticResource BaseButtonStyle}"
+                    Command="{Binding AddStepCommand}" Margin="0,0,0,8"
+                    IsEnabled="{Binding SelectedSequence, Converter={StaticResource NotNullToBoolConverter}}"/>
+            <ListView Grid.Row="2" ItemsSource="{Binding SelectedSequence.Steps}"
+                      SelectedItem="{Binding SelectedStep}">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Name}" FontSize="12"/>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            <StackPanel Grid.Row="2" VerticalAlignment="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
+                <Button Content="▲" Width="32" Style="{StaticResource BaseButtonStyle}"
+                        Command="{Binding MoveStepUpCommand}" CommandParameter="{Binding SelectedStep}"
+                        Margin="0,0,4,0"/>
+                <Button Content="▼" Width="32" Style="{StaticResource BaseButtonStyle}"
+                        Command="{Binding MoveStepDownCommand}" CommandParameter="{Binding SelectedStep}"
+                        Margin="0,0,4,0"/>
+                <Button Content="🗑" Style="{StaticResource DangerButtonStyle}"
+                        Command="{Binding RemoveStepCommand}" CommandParameter="{Binding SelectedStep}"/>
+            </StackPanel>
+        </Grid>
+
+        <GridSplitter Grid.Column="3" Width="6"/>
+
+        <!-- Editor do passo -->
+        <ScrollViewer Grid.Column="4" VerticalScrollBarVisibility="Auto" Margin="12,0,0,0">
+            <StackPanel>
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Setter Property="Visibility" Value="Visible"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedStep}" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+
+                <TextBlock Text="EDITOR DO PASSO" Style="{StaticResource SectionTitleStyle}"/>
+
+                <TextBlock Text="Região de detecção" Style="{StaticResource LabelStyle}"
+                           ToolTip="Onde observar (ex.: canto da tela)"/>
+                <ComboBox ItemsSource="{Binding AvailableRegions}"
+                          SelectedValuePath="Id" DisplayMemberPath="Name"
+                          SelectedValue="{Binding SelectedStep.RegionId}" Margin="0,0,0,8"/>
+
+                <TextBlock Text="Tipo de condição" Style="{StaticResource LabelStyle}"/>
+                <ComboBox ItemsSource="{x:Static models:ConditionTypeValues.All}"
+                          SelectedItem="{Binding SelectedStep.Condition.Type}" Margin="0,0,0,8">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource EnumToStringConverter}}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <!-- Cor -->
+                <StackPanel Margin="0,0,0,8">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SelectedStep.Condition.Type}"
+                                             Value="{x:Static models:ConditionType.ColorDetection}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="Cor alvo" Style="{StaticResource LabelStyle}"/>
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Text="{Binding SelectedStep.Condition.TargetColor, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="1" Content="🎯" Width="32" Margin="4,0,0,0"
+                                Style="{StaticResource BaseButtonStyle}"
+                                Command="{Binding PickColorFromScreenCommand}"/>
+                    </Grid>
+                    <Button Content="📷 Amostrar da região" Style="{StaticResource AccentButtonStyle}"
+                            Command="{Binding SampleColorFromRegionCommand}" Margin="0,0,0,6"/>
+                    <TextBlock Text="Pixels mínimos" Style="{StaticResource LabelStyle}"/>
+                    <TextBox Text="{Binding SelectedStep.Condition.MinMatchingPixels, UpdateSourceTrigger=PropertyChanged}"
+                             Width="80" HorizontalAlignment="Left"/>
+                </StackPanel>
+
+                <TextBlock Text="Espera após ações (ms)" Style="{StaticResource LabelStyle}"/>
+                <TextBox Text="{Binding SelectedStep.DelayAfterMs, UpdateSourceTrigger=PropertyChanged}"
+                         Width="80" HorizontalAlignment="Left" Margin="0,0,0,12"/>
+
+                <Separator Style="{StaticResource PanelSeparatorStyle}"/>
+
+                <DockPanel Margin="0,8,0,6" LastChildFill="False">
+                    <TextBlock Text="AÇÕES DO PASSO" Style="{StaticResource SectionTitleStyle}"
+                               DockPanel.Dock="Left"/>
+                    <Button Content="+ Ação" Style="{StaticResource AccentButtonStyle}"
+                            DockPanel.Dock="Right"
+                            Command="{Binding AddActionToStepCommand}"
+                            CommandParameter="{Binding SelectedStep}"/>
+                </DockPanel>
+
+                <TextBlock Foreground="{StaticResource TextMutedBrush}" FontSize="10"
+                           TextWrapping="Wrap" Margin="0,0,0,8"
+                           Text="Dica: desmarque 'Usar posição da detecção' e escolha o ponto de clique em outro lugar da tela."/>
+
+                <ItemsControl ItemsSource="{Binding SelectedStep.Actions}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{StaticResource BgCardBrush}"
+                                    BorderBrush="{StaticResource BgBorderBrush}"
+                                    BorderThickness="1" CornerRadius="6"
+                                    Padding="10" Margin="0,0,0,6">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <ComboBox ItemsSource="{x:Static models:ActionTypeValues.All}"
+                                                  SelectedItem="{Binding Type}" Margin="0,0,0,6">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource EnumToStringConverter}}"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+
+                                        <StackPanel Margin="0,0,0,6"
+                                                    Visibility="{Binding Type, Converter={StaticResource ActionTypeToMouseVisConverter}}">
+                                            <CheckBox Content="Usar posição da detecção"
+                                                      IsChecked="{Binding UseDetectionCoordinates}"
+                                                      Margin="0,0,0,6"/>
+                                            <StackPanel>
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding UseDetectionCoordinates}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Ponto de clique (X, Y)" Style="{StaticResource LabelStyle}"/>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBox Width="70" Margin="0,0,4,0"
+                                                             Text="{Binding TargetX, UpdateSourceTrigger=PropertyChanged}"/>
+                                                    <TextBox Width="70" Margin="0,0,4,0"
+                                                             Text="{Binding TargetY, UpdateSourceTrigger=PropertyChanged}"/>
+                                                    <Button Content="🎯 Escolher"
+                                                            Style="{StaticResource AccentButtonStyle}"
+                                                            Command="{Binding DataContext.PickClickPointCommand,
+                                                                RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <TextBlock Text="Delay (ms)" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox Text="{Binding DelayBeforeMs, UpdateSourceTrigger=PropertyChanged}"
+                                                 Width="80" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="🗑" Width="30" Height="30"
+                                            Style="{StaticResource DangerButtonStyle}"
+                                            Command="{Binding DataContext.RemoveActionFromStepCommand,
+                                                RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                        <Button.CommandParameter>
+                                            <MultiBinding Converter="{StaticResource StepPlusActionConverter}">
+                                                <Binding Path="DataContext.SelectedStep"
+                                                         RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                                <Binding/>
+                                            </MultiBinding>
+                                        </Button.CommandParameter>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Config da sequência selecionada -->
+        <Border Grid.Column="4" VerticalAlignment="Top" HorizontalAlignment="Right"
+                Background="{StaticResource BgCardBrush}" CornerRadius="6" Padding="10"
+                Margin="12,0,0,0" MaxWidth="280">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding SelectedSequence, Converter={StaticResource NotNullToBoolConverter}}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <StackPanel DataContext="{Binding SelectedSequence}">
+                <TextBlock Text="Sequência" Style="{StaticResource LabelStyle}"/>
+                <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"/>
+                <CheckBox Content="Ativa" IsChecked="{Binding IsEnabled}" Margin="0,0,0,4"/>
+                <CheckBox Content="Repetir ao concluir" IsChecked="{Binding Loop}" Margin="0,0,0,6"/>
+                <TextBlock Text="Pausa entre passos (ms)" Style="{StaticResource LabelStyle}"/>
+                <TextBox Text="{Binding DelayBetweenStepsMs, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

@@ -42,6 +42,42 @@ public static class ProfileRepair
         RepairColorDetectionDefaults(rule.Condition);
     }
 
+    public static void EnsureSequenceCollections(RuleSequence sequence)
+    {
+        foreach (var step in sequence.Steps)
+        {
+            if (step.Condition.TargetColors is not ObservableCollection<string>)
+            {
+                step.Condition.TargetColors = new ObservableCollection<string>(
+                    step.Condition.TargetColors ?? []);
+            }
+
+            if (step.Actions is not ObservableCollection<TriggerAction>)
+            {
+                step.Actions = new ObservableCollection<TriggerAction>(
+                    step.Actions ?? []);
+            }
+
+            RepairColorDetectionDefaults(step.Condition);
+        }
+    }
+
+    public static void RepairSequenceRegionLinks(IEnumerable<RuleSequence> sequences, IList<MonitoredRegion> regions)
+    {
+        if (regions.Count == 0) return;
+
+        var byId = regions.ToDictionary(r => r.Id);
+        foreach (var step in sequences.SelectMany(s => s.Steps))
+        {
+            if (byId.ContainsKey(step.RegionId))
+                continue;
+
+            var match = regions.FirstOrDefault();
+            if (match is not null)
+                step.RegionId = match.Id;
+        }
+    }
+
     /// <summary>Ajusta regras antigas que exigiam 30% e não detectavam ícones pequenos.</summary>
     public static void RepairColorDetectionDefaults(RuleCondition condition)
     {

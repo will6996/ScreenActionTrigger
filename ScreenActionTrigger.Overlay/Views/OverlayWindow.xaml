@@ -43,6 +43,39 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
+        <!-- Configured click targets -->
+        <ItemsControl ItemsSource="{Binding ClickTargets}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Canvas Background="Transparent"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                    <Setter Property="Canvas.Left" Value="{Binding Left}"/>
+                    <Setter Property="Canvas.Top"  Value="{Binding Top}"/>
+                </Style>
+            </ItemsControl.ItemContainerStyle>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Ellipse Width="24" Height="24"
+                                 Stroke="#FFFF8800" StrokeThickness="2.5"
+                                 Fill="#40FF8800"/>
+                        <Line X1="12" Y1="0" X2="12" Y2="24" Stroke="#FFFF8800" StrokeThickness="1.5"/>
+                        <Line X1="0" Y1="12" X2="24" Y2="12" Stroke="#FFFF8800" StrokeThickness="1.5"/>
+                        <Border Background="#CC1A1A2E" CornerRadius="4"
+                                Padding="5,2" HorizontalAlignment="Left"
+                                VerticalAlignment="Bottom" Margin="0,26,0,0">
+                            <TextBlock Text="{Binding Label}"
+                                       Foreground="#FFFF8800"
+                                       FontSize="10" FontWeight="SemiBold"/>
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
         <!-- Active detections -->
         <ItemsControl ItemsSource="{Binding Detections}">
             <ItemsControl.ItemsPanel>

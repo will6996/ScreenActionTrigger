@@ -26,11 +26,16 @@ public sealed class TriggerAction
     public int PathStepDelayMs { get; set; } = 30;
     public bool PathLeftClickAtEnd { get; set; }
 
+    private string ClickTargetSuffix =>
+        !UseDetectionCoordinates && TargetX.HasValue && TargetY.HasValue
+            ? $" em ({TargetX},{TargetY})"
+            : UseDetectionCoordinates ? " (detecção)" : "";
+
     public string GetDescription() => Type switch
     {
-        ActionType.MouseLeftClick    => "Clique Esquerdo",
-        ActionType.MouseRightClick   => "Clique Direito",
-        ActionType.MouseDoubleClick  => "Clique Duplo",
+        ActionType.MouseLeftClick    => "Clique Esquerdo" + ClickTargetSuffix,
+        ActionType.MouseRightClick   => "Clique Direito" + ClickTargetSuffix,
+        ActionType.MouseDoubleClick  => "Clique Duplo" + ClickTargetSuffix,
         ActionType.MousePress        => "Pressionar Mouse",
         ActionType.MouseRelease      => "Soltar Mouse",
         ActionType.MouseScroll       => $"Scroll ({ScrollAmount})",

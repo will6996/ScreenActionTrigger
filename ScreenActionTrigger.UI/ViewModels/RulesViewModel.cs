@@ -263,6 +263,24 @@ public sealed partial class RulesViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void PickClickPoint(TriggerAction? action)
+    {
+        if (action is null) return;
+        ClickPointPickRequested?.Invoke(this, action);
+    }
+
+    public event EventHandler? OverlayPreviewRequested;
+
+    public void ApplyPickedClickPoint(TriggerAction action, int x, int y)
+    {
+        action.TargetX = x;
+        action.TargetY = y;
+        action.UseDetectionCoordinates = false;
+        OnPropertyChanged(nameof(SelectedRule));
+        OverlayPreviewRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    [RelayCommand]
     private void RequestPathRecording(TriggerAction? action)
     {
         if (action is null) return;
@@ -313,6 +331,7 @@ public sealed partial class RulesViewModel : ObservableObject
 
     public event EventHandler<RuleCondition>? ColorPickRequested;
     public event EventHandler? ExtraColorPickRequested;
+    public event EventHandler<TriggerAction>? ClickPointPickRequested;
     public event EventHandler<TriggerAction>? PathRecordingRequested;
 
     partial void OnFilterTextChanged(string value)  => RefreshRulesView();

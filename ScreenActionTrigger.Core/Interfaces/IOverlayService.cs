@@ -13,6 +13,9 @@ public interface IOverlayService
     void Toggle();
 
     void UpdateRegions(IEnumerable<MonitoredRegion> regions);
+    void ShowConfigurationPreview(
+        IEnumerable<MonitoredRegion> regions,
+        IEnumerable<ClickTargetMarker> clickTargets);
     void ShowDetection(DetectionResult result, MonitoredRegion region);
     void ShowRuleTriggered(VisualRule rule, DetectionResult result);
     void ClearDetections();

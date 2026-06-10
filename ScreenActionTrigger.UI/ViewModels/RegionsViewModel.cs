@@ -95,6 +95,7 @@ public sealed partial class RegionsViewModel : ObservableObject
     }
 
     public event EventHandler? RegionSelectionRequested;
+    public event EventHandler? OverlayPreviewRequested;
 
     public void ApplySelectedRegion(int x, int y, int w, int h)
     {
@@ -103,5 +104,6 @@ public sealed partial class RegionsViewModel : ObservableObject
         SelectedRegion.X = x; SelectedRegion.Y = y;
         SelectedRegion.Width = w; SelectedRegion.Height = h;
         OnPropertyChanged(nameof(SelectedRegion));
+        OverlayPreviewRequested?.Invoke(this, EventArgs.Empty);
     }
 }

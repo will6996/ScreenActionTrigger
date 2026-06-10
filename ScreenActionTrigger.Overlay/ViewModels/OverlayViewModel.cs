@@ -10,13 +10,29 @@ public sealed partial class OverlayViewModel : ObservableObject
     [ObservableProperty] private bool _isVisible = true;
 
     public ObservableCollection<RegionOverlayItem> Regions { get; } = new();
+    public ObservableCollection<ClickTargetOverlayItem> ClickTargets { get; } = new();
     public ObservableCollection<DetectionOverlayItem> Detections { get; } = new();
 
     public void UpdateRegions(IEnumerable<MonitoredRegion> regions)
     {
         Regions.Clear();
+        ClickTargets.Clear();
         foreach (var r in regions.Where(r => r.IsEnabled))
             Regions.Add(new RegionOverlayItem(r));
+    }
+
+    public void UpdateRegionsPreview(IEnumerable<MonitoredRegion> regions)
+    {
+        Regions.Clear();
+        foreach (var r in regions)
+            Regions.Add(new RegionOverlayItem(r));
+    }
+
+    public void UpdateClickTargets(IEnumerable<ClickTargetMarker> targets)
+    {
+        ClickTargets.Clear();
+        foreach (var t in targets)
+            ClickTargets.Add(new ClickTargetOverlayItem(t));
     }
 
     public void AddDetection(DetectionResult result, MonitoredRegion region, VisualRule? rule = null)
@@ -71,6 +87,20 @@ public sealed class RegionOverlayItem
         Id = r.Id; Name = r.Name;
         Left = r.X; Top = r.Y; Width = r.Width; Height = r.Height;
         Priority = r.Priority;
+    }
+}
+
+public sealed class ClickTargetOverlayItem
+{
+    public double Left   { get; }
+    public double Top    { get; }
+    public string Label  { get; }
+
+    public ClickTargetOverlayItem(ClickTargetMarker marker)
+    {
+        Left  = marker.X - 12;
+        Top   = marker.Y - 12;
+        Label = marker.Label;
     }
 }
 

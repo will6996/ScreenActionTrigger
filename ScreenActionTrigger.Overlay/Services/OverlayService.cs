@@ -44,6 +44,25 @@ public sealed class OverlayService : IOverlayService
     public void UpdateRegions(IEnumerable<MonitoredRegion> regions) =>
         RunOnUiThread(() => _viewModel?.UpdateRegions(regions));
 
+    public void ShowConfigurationPreview(
+        IEnumerable<MonitoredRegion> regions,
+        IEnumerable<ClickTargetMarker> clickTargets)
+    {
+        RunOnUiThread(() =>
+        {
+            if (_window is null)
+            {
+                _viewModel = new OverlayViewModel();
+                _window = new OverlayWindow(_viewModel);
+            }
+
+            _viewModel!.UpdateRegionsPreview(regions);
+            _viewModel.UpdateClickTargets(clickTargets);
+            _viewModel.ClearDetections();
+            _window!.Show();
+        });
+    }
+
     public void ShowDetection(DetectionResult result, MonitoredRegion region)
     {
         if (!IsEnabled || !IsVisible) return;

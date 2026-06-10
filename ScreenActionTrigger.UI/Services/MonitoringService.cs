@@ -10,6 +10,7 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
 {
     private readonly IScreenCaptureService _capture;
     private readonly IRuleEngine _ruleEngine;
+    private readonly ISequenceEngine _sequenceEngine;
     private readonly IActionDispatcher _dispatcher;
     private readonly IVisionEngine _vision;
     private readonly IOverlayService _overlay;
@@ -28,21 +29,24 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
     public MonitoringService(
         IScreenCaptureService capture,
         IRuleEngine ruleEngine,
+        ISequenceEngine sequenceEngine,
         IActionDispatcher dispatcher,
         IVisionEngine vision,
         IOverlayService overlay,
         ILogger<MonitoringService> logger)
     {
         _capture    = capture;
-        _ruleEngine = ruleEngine;
-        _dispatcher = dispatcher;
+        _ruleEngine     = ruleEngine;
+        _sequenceEngine = sequenceEngine;
+        _dispatcher     = dispatcher;
         _vision     = vision;
         _overlay    = overlay;
         _logger     = logger;
 
-        _ruleEngine.RuleTriggered      += OnRuleTriggered;
-        _ruleEngine.DetectionCompleted += OnDetectionCompleted;
-        _dispatcher.ActionExecuted     += OnActionExecuted;
+        _ruleEngine.RuleTriggered         += OnRuleTriggered;
+        _ruleEngine.DetectionCompleted    += OnDetectionCompleted;
+        _sequenceEngine.StepTriggered     += OnSequenceStepTriggered;
+        _dispatcher.ActionExecuted        += OnActionExecuted;
     }
 
     public async Task StartAsync(ExecutionProfile profile, CancellationToken ct = default)
@@ -56,6 +60,7 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
         await _capture.InitializeAsync(_cts.Token);
 
         _ruleEngine.LoadRules(profile.Rules);
+        _sequenceEngine.LoadSequences(profile.Sequences);
         _vision.SetTemplates(profile.Templates);
         _overlay.UpdateRegions(profile.Regions);
 
@@ -83,6 +88,7 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
         _dispatcher.CancelAll();
         _overlay.Hide();
         _ruleEngine.ResetAll();
+        _sequenceEngine.ResetAll();
         _vision.ClearAllCaches();
         _logger.LogInformation("Monitoring stopped");
     }
@@ -132,12 +138,15 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
             if (frameData is null) return;
 
             var needsColor = profile.Rules.Any(r =>
-                r.RegionId == region.Id && r.IsEnabled && r.Condition.UsesColorDetection());
+                    r.RegionId == region.Id && r.IsEnabled && r.Condition.UsesColorDetection())
+                || profile.Sequences.Any(s => s.IsEnabled && s.Steps.Any(st =>
+                    st.RegionId == region.Id && st.Condition.UsesColorDetection()));
 
             if (profile.Settings.GrayscaleProcessing && !needsColor)
                 frameData = await ConvertToGrayscaleAsync(frameData);
 
             await _ruleEngine.ProcessRegionAsync(region, frameData, ct);
+            await _sequenceEngine.ProcessRegionAsync(region, frameData, ct);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -145,6 +154,35 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
             _logger.LogError(ex, "Error processing region '{Name}'", region.Name);
         }
         finally { semaphore.Release(); }
+    }
+
+    private async void OnSequenceStepTriggered(object? sender, SequenceStepTriggeredEventArgs e)
+    {
+        try
+        {
+            foreach (var action in e.Step.Actions)
+                await _dispatcher.ExecuteAsync(action, e.Detection);
+
+            if (e.Step.DelayAfterMs > 0)
+                await Task.Delay(e.Step.DelayAfterMs);
+
+            _sequenceEngine.CompleteStep(e.Sequence.Id);
+
+            AddEntry(new MonitoringEntry
+            {
+                RegionName    = e.Detection.RegionName ?? string.Empty,
+                RuleName      = $"{e.Sequence.Name} → {e.Step.Name}",
+                ActionName    = e.Step.Actions.FirstOrDefault()?.GetDescription(),
+                Confidence    = e.Detection.Confidence,
+                DetectionType = $"Seq passo {e.StepIndex + 1}",
+                WasExecuted   = true
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Sequence step execution failed: {Sequence}", e.Sequence.Name);
+            _sequenceEngine.CompleteStep(e.Sequence.Id);
+        }
     }
 
     private void OnRuleTriggered(object? sender, Core.Interfaces.RuleTriggeredEventArgs e)
@@ -258,9 +296,10 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
 
     public void Dispose()
     {
-        _ruleEngine.RuleTriggered      -= OnRuleTriggered;
-        _ruleEngine.DetectionCompleted -= OnDetectionCompleted;
-        _dispatcher.ActionExecuted     -= OnActionExecuted;
+        _ruleEngine.RuleTriggered         -= OnRuleTriggered;
+        _ruleEngine.DetectionCompleted    -= OnDetectionCompleted;
+        _sequenceEngine.StepTriggered     -= OnSequenceStepTriggered;
+        _dispatcher.ActionExecuted        -= OnActionExecuted;
         _cts?.Cancel();
         _cts?.Dispose();
     }

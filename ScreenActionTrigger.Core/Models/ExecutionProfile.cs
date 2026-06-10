@@ -10,6 +10,7 @@ public sealed class ExecutionProfile
     public List<MonitoredRegion> Regions { get; set; } = new();
     public List<Template> Templates { get; set; } = new();
     public List<VisualRule> Rules { get; set; } = new();
+    public List<RuleSequence> Sequences { get; set; } = new();
     public AppSettings Settings { get; set; } = new();
 }
 

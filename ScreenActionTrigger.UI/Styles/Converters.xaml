@@ -15,5 +15,7 @@
     <conv:ActionTypeToPathVisConverter x:Key="ActionTypeToPathVisConverter"/>
     <conv:EnumToStringConverter        x:Key="EnumToStringConverter"/>
     <conv:RulePlusActionConverter       x:Key="RulePlusActionConverter"/>
+    <conv:StepPlusActionConverter       x:Key="StepPlusActionConverter"/>
+    <conv:ActionTypeToMouseVisConverter x:Key="ActionTypeToMouseVisConverter"/>
     <BooleanToVisibilityConverter       x:Key="StdBoolToVisConverter"/>
 </ResourceDictionary>

@@ -21,7 +21,8 @@ public partial class RulesView : UserControl
             {
                 _vm.ColorPickRequested      -= OnColorPickRequested;
                 _vm.ExtraColorPickRequested -= OnExtraColorPickRequested;
-                _vm.PathRecordingRequested  -= OnPathRecordingRequested;
+                _vm.PathRecordingRequested   -= OnPathRecordingRequested;
+                _vm.ClickPointPickRequested  -= OnClickPointPickRequested;
             }
 
             _vm = DataContext as RulesViewModel;
@@ -30,7 +31,8 @@ public partial class RulesView : UserControl
             {
                 _vm.ColorPickRequested      += OnColorPickRequested;
                 _vm.ExtraColorPickRequested += OnExtraColorPickRequested;
-                _vm.PathRecordingRequested  += OnPathRecordingRequested;
+                _vm.PathRecordingRequested   += OnPathRecordingRequested;
+                _vm.ClickPointPickRequested  += OnClickPointPickRequested;
             }
         };
     }
@@ -117,6 +119,13 @@ public partial class RulesView : UserControl
     {
         var overlay = new PathRecorderOverlay();
         overlay.PathRecorded += (_, points) => _vm?.ApplyRecordedPath(action, points);
+        overlay.ShowDialog();
+    }
+
+    private void OnClickPointPickRequested(object? sender, TriggerAction action)
+    {
+        var overlay = new PointPickerOverlay();
+        overlay.PointSelected += (_, pt) => _vm?.ApplyPickedClickPoint(action, pt.X, pt.Y);
         overlay.ShowDialog();
     }
 }

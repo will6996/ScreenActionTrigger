@@ -477,6 +477,40 @@
                                                 </ComboBox.ItemTemplate>
                                             </ComboBox>
 
+                                            <!-- Destino do clique -->
+                                            <StackPanel Margin="0,0,0,6"
+                                                        Visibility="{Binding Type, Converter={StaticResource ActionTypeToMouseVisConverter}}">
+                                                <CheckBox Content="Usar posição da detecção"
+                                                          IsChecked="{Binding UseDetectionCoordinates}"
+                                                          Margin="0,0,0,6"/>
+                                                <StackPanel>
+                                                    <StackPanel.Style>
+                                                        <Style TargetType="StackPanel">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding UseDetectionCoordinates}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </StackPanel.Style>
+                                                    <TextBlock Text="Ponto de clique (X, Y)"
+                                                               Style="{StaticResource LabelStyle}"
+                                                               ToolTip="Clique em outro lugar da tela (detecta na região, clica aqui)"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                                        <TextBox Width="70" Margin="0,0,4,0"
+                                                                 Text="{Binding TargetX, UpdateSourceTrigger=PropertyChanged}"/>
+                                                        <TextBox Width="70" Margin="0,0,4,0"
+                                                                 Text="{Binding TargetY, UpdateSourceTrigger=PropertyChanged}"/>
+                                                        <Button Content="🎯 Escolher"
+                                                                Style="{StaticResource AccentButtonStyle}"
+                                                                Command="{Binding DataContext.PickClickPointCommand,
+                                                                    RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding}"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </StackPanel>
+
                                             <!-- Caminho gravado -->
                                             <StackPanel Margin="0,0,0,6">
                                                 <StackPanel.Style>

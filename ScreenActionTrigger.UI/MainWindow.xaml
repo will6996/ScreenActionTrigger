@@ -180,6 +180,9 @@
             <TabItem Header="⚡  Regras">
                 <views:RulesView DataContext="{Binding RulesVM}"/>
             </TabItem>
+            <TabItem Header="🔗  Sequências">
+                <views:SequencesView DataContext="{Binding SequencesVM}"/>
+            </TabItem>
             <TabItem Header="🖼  Templates">
                 <views:TemplatesView DataContext="{Binding TemplatesVM}"/>
             </TabItem>
@@ -209,9 +212,10 @@
                            Foreground="{StaticResource TextMutedBrush}"
                            FontSize="10" VerticalAlignment="Center">
                     <TextBlock.Text>
-                        <MultiBinding StringFormat="{}{0} regiões  •  {1} regras  •  {2} templates">
+                        <MultiBinding StringFormat="{}{0} regiões  •  {1} regras  •  {2} seq.  •  {3} templates">
                             <Binding Path="RegionsVM.Regions.Count"/>
                             <Binding Path="RulesVM.Rules.Count"/>
+                            <Binding Path="SequencesVM.Sequences.Count"/>
                             <Binding Path="TemplatesVM.Templates.Count"/>
                         </MultiBinding>
                     </TextBlock.Text>

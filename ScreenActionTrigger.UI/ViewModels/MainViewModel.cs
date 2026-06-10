@@ -27,6 +27,7 @@ public sealed partial class MainViewModel : ObservableObject
     public UpdateViewModel     UpdateVM     { get; }
     public RegionsViewModel    RegionsVM    { get; }
     public RulesViewModel      RulesVM      { get; }
+    public SequencesViewModel  SequencesVM  { get; }
     public TemplatesViewModel  TemplatesVM  { get; }
     public MonitoringViewModel MonitoringVM { get; }
     public SettingsViewModel   SettingsVM   { get; }
@@ -37,6 +38,7 @@ public sealed partial class MainViewModel : ObservableObject
         IOverlayService overlay,
         RegionsViewModel regionsVm,
         RulesViewModel rulesVm,
+        SequencesViewModel sequencesVm,
         TemplatesViewModel templatesVm,
         MonitoringViewModel monitoringVm,
         SettingsViewModel settingsVm,
@@ -51,21 +53,78 @@ public sealed partial class MainViewModel : ObservableObject
         UpdateVM     = updateVm;
         RegionsVM    = regionsVm;
         RulesVM      = rulesVm;
+        SequencesVM  = sequencesVm;
         TemplatesVM  = templatesVm;
         MonitoringVM = monitoringVm;
         SettingsVM   = settingsVm;
 
         _monitoring.EntryAdded += (_, e) => MonitoringVM.AddEntry(e);
+        RegionsVM.OverlayPreviewRequested   += (_, _) => RefreshOverlayPreview();
+        RulesVM.OverlayPreviewRequested     += (_, _) => RefreshOverlayPreview();
+        SequencesVM.OverlayPreviewRequested += (_, _) => RefreshOverlayPreview();
         SyncChildVMs();
 
         // Verificação de atualização em background (não bloqueia o startup)
         _ = Task.Run(async () => await UpdateVM.CheckOnStartupAsync());
     }
 
+    private void RefreshOverlayPreview()
+    {
+        if (IsMonitoring) return;
+
+        _overlay.ShowConfigurationPreview(
+            RegionsVM.Regions,
+            CollectClickTargets());
+        StatusText = "Overlay: regiões e pontos de clique visíveis";
+    }
+
+    private IEnumerable<ClickTargetMarker> CollectClickTargets()
+    {
+        foreach (var rule in RulesVM.Rules)
+        {
+            foreach (var action in rule.Actions)
+            {
+                if (action.UseDetectionCoordinates
+                    || !action.TargetX.HasValue
+                    || !action.TargetY.HasValue)
+                    continue;
+
+                yield return new ClickTargetMarker
+                {
+                    X = action.TargetX.Value,
+                    Y = action.TargetY.Value,
+                    Label = $"{rule.Name}: {action.GetDescription()}"
+                };
+            }
+        }
+
+        foreach (var sequence in SequencesVM.Sequences)
+        {
+            foreach (var step in sequence.Steps)
+            {
+                foreach (var action in step.Actions)
+                {
+                    if (action.UseDetectionCoordinates
+                        || !action.TargetX.HasValue
+                        || !action.TargetY.HasValue)
+                        continue;
+
+                    yield return new ClickTargetMarker
+                    {
+                        X = action.TargetX.Value,
+                        Y = action.TargetY.Value,
+                        Label = $"{sequence.Name} → {step.Name}: {action.GetDescription()}"
+                    };
+                }
+            }
+        }
+    }
+
     private void SyncChildVMs()
     {
         RegionsVM.SetProfile(Profile);
         RulesVM.SetProfile(Profile);
+        SequencesVM.SetProfile(Profile);
         TemplatesVM.SetProfile(Profile);
         SettingsVM.SetProfile(Profile);
     }
@@ -80,25 +139,30 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             Profile.Regions   = new List<MonitoredRegion>(RegionsVM.Regions);
-            Profile.Rules     = new List<VisualRule>(RulesVM.Rules);
-            Profile.Templates = new List<Template>(TemplatesVM.Templates);
-            Profile.Settings  = SettingsVM.Settings;
+            Profile.Rules      = new List<VisualRule>(RulesVM.Rules);
+            Profile.Sequences  = new List<RuleSequence>(SequencesVM.Sequences);
+            Profile.Templates  = new List<Template>(TemplatesVM.Templates);
+            Profile.Settings   = SettingsVM.Settings;
 
             foreach (var rule in Profile.Rules)
                 ProfileRepair.EnsureRuleCollections(rule);
+            foreach (var seq in Profile.Sequences)
+                ProfileRepair.EnsureSequenceCollections(seq);
             ProfileRepair.RepairRuleRegionLinks(Profile.Rules, Profile.Regions);
+            ProfileRepair.RepairSequenceRegionLinks(Profile.Sequences, Profile.Regions);
 
             var activeRules = Profile.Rules.Count(r => r.IsEnabled);
-            if (activeRules == 0)
+            var activeSeqs  = Profile.Sequences.Count(s => s.IsEnabled && s.Steps.Count > 0);
+            if (activeRules == 0 && activeSeqs == 0)
             {
-                StatusText = "Nenhuma regra ativa — crie uma regra na aba Regras";
+                StatusText = "Nenhuma regra ou sequência ativa";
                 return;
             }
 
             await _monitoring.StartAsync(Profile).ConfigureAwait(true);
             IsMonitoring = true;
             IsPaused     = false;
-            StatusText   = $"Monitorando {Profile.Regions.Count(r => r.IsEnabled)} regiões, {activeRules} regras…";
+            StatusText   = $"Monitorando {Profile.Regions.Count(r => r.IsEnabled)} regiões, {activeRules} regras, {activeSeqs} sequências…";
             OnPropertyChanged(nameof(Profile));
             Title        = $"Screen Action Trigger — {Profile.Name} ▶";
             _ = SaveAutoSaveAsync();
@@ -252,15 +316,28 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ToggleOverlay()
     {
-        _overlay.Toggle();
-        StatusText = _overlay.IsVisible ? "Overlay visível" : "Overlay oculto";
+        if (_overlay.IsVisible)
+        {
+            _overlay.Hide();
+            StatusText = "Overlay oculto";
+        }
+        else if (IsMonitoring)
+        {
+            _overlay.Show();
+            StatusText = "Overlay visível";
+        }
+        else
+        {
+            RefreshOverlayPreview();
+        }
     }
 
     public void PushChangesToProfile()
     {
         Profile.Regions   = new List<MonitoredRegion>(RegionsVM.Regions);
-        Profile.Rules     = new List<VisualRule>(RulesVM.Rules);
-        Profile.Templates = new List<Template>(TemplatesVM.Templates);
+        Profile.Rules      = new List<VisualRule>(RulesVM.Rules);
+        Profile.Sequences  = new List<RuleSequence>(SequencesVM.Sequences);
+        Profile.Templates  = new List<Template>(TemplatesVM.Templates);
         Profile.Settings  = SettingsVM.Settings;
         Profile.UpdatedAt = DateTime.UtcNow;
     }

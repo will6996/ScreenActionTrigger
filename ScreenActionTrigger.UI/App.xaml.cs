@@ -70,6 +70,7 @@ public partial class App : Application
 
         // Core engines
         services.AddSingleton<IRuleEngine, RuleEngine>();
+        services.AddSingleton<ISequenceEngine, SequenceEngine>();
 
         // Persistence
         services.AddSingleton<IProfileManager, ProfileRepository>();
@@ -92,6 +93,7 @@ public partial class App : Application
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<RegionsViewModel>();
         services.AddSingleton<RulesViewModel>();
+        services.AddSingleton<SequencesViewModel>();
         services.AddSingleton<TemplatesViewModel>();
         services.AddSingleton<MonitoringViewModel>();
         services.AddSingleton<MainViewModel>();
