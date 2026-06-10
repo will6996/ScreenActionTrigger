@@ -1,8 +1,8 @@
 {
-  "version":      "1.1.1",
-  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.1/ScreenActionTrigger.UI.exe",
-  "releaseNotes": "- Corrige verificação de atualizações (repositório público + fallback GitHub Releases)",
+  "version":      "1.1.2",
+  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.2/ScreenActionTrigger.UI.exe",
+  "releaseNotes": "- Corrige auto-atualização que fechava sem reiniciar (bug do PowerShell $PID)",
   "mandatory":    false,
-  "fileSize":     113082955,
+  "fileSize":     113085441,
   "releasedAt":   "2026-06-10T03:00:00Z"
 }

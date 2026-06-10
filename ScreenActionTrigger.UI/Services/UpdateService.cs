@@ -192,47 +192,62 @@ public sealed class UpdateService : IUpdateService, IDisposable
         var dstEsc  = currentExe.Replace("'", "''");
         var scrEsc  = scriptPath.Replace("'", "''");
 
+        var logPath = Path.Combine(Path.GetTempPath(), "SAT_Updater.log");
+        var logEsc  = logPath.Replace("'", "''");
+
+        // $appPid — NUNCA usar $pid: conflita com $PID (read-only) do PowerShell
         var script = new System.Text.StringBuilder();
         script.AppendLine("# Screen Action Trigger — Auto-Update Script");
         script.AppendLine($"# Gerado em: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-        script.AppendLine($"$pid = {pid}");
-        script.AppendLine($"$src = '{srcEsc}'");
-        script.AppendLine($"$dst = '{dstEsc}'");
-        script.AppendLine($"$scr = '{scrEsc}'");
+        script.AppendLine($"$appPid = {pid}");
+        script.AppendLine($"$src   = '{srcEsc}'");
+        script.AppendLine($"$dst   = '{dstEsc}'");
+        script.AppendLine($"$scr   = '{scrEsc}'");
+        script.AppendLine($"$log   = '{logEsc}'");
         script.AppendLine("");
-        script.AppendLine("Write-Host 'SAT Updater: aguardando processo fechar...'");
+        script.AppendLine("function Write-Log([string]$Message) {");
+        script.AppendLine("    $line = \"$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $Message\"");
+        script.AppendLine("    Add-Content -Path $log -Value $line -Encoding UTF8");
+        script.AppendLine("}");
+        script.AppendLine("");
+        script.AppendLine("Write-Log 'SAT Updater: iniciado'");
+        script.AppendLine("Write-Log \"Aguardando processo $appPid fechar...\"");
         script.AppendLine("$limit = 30; $elapsed = 0");
-        script.AppendLine("while ((Get-Process -Id $pid -EA SilentlyContinue) -and $elapsed -lt $limit) {");
+        script.AppendLine("while ((Get-Process -Id $appPid -EA SilentlyContinue) -and $elapsed -lt $limit) {");
         script.AppendLine("    Start-Sleep -Milliseconds 500; $elapsed += 0.5");
         script.AppendLine("}");
-        script.AppendLine("if (Get-Process -Id $pid -EA SilentlyContinue) {");
-        script.AppendLine("    Stop-Process -Id $pid -Force -EA SilentlyContinue");
-        script.AppendLine("    Start-Sleep -Seconds 1");
+        script.AppendLine("if (Get-Process -Id $appPid -EA SilentlyContinue) {");
+        script.AppendLine("    Write-Log 'Processo ainda ativo — forçando encerramento'");
+        script.AppendLine("    Stop-Process -Id $appPid -Force -EA SilentlyContinue");
+        script.AppendLine("    Start-Sleep -Seconds 2");
         script.AppendLine("}");
-        script.AppendLine("Write-Host 'SAT Updater: aplicando...'");
+        script.AppendLine("Write-Log 'Aplicando atualização...'");
         script.AppendLine("try {");
-        script.AppendLine("    Copy-Item -Path $src -Destination $dst -Force -EA Stop");
-        script.AppendLine("    Write-Host 'SAT Updater: sucesso.'");
+        script.AppendLine("    if (-not (Test-Path -LiteralPath $src)) { throw \"Arquivo baixado não encontrado: $src\" }");
+        script.AppendLine("    Copy-Item -LiteralPath $src -Destination $dst -Force -EA Stop");
+        script.AppendLine("    Write-Log 'Cópia concluída com sucesso'");
         script.AppendLine("} catch {");
-        script.AppendLine("    Write-Host \"SAT Updater: ERRO: $_\"");
-        script.AppendLine("    Read-Host 'Pressione Enter para sair'");
+        script.AppendLine("    Write-Log \"ERRO na cópia: $_\"");
         script.AppendLine("    exit 1");
         script.AppendLine("}");
-        script.AppendLine("Remove-Item $src -Force -EA SilentlyContinue");
-        script.AppendLine("Remove-Item $scr -Force -EA SilentlyContinue");
-        script.AppendLine("Write-Host 'SAT Updater: reiniciando...'");
-        script.AppendLine("Start-Process -FilePath $dst");
+        script.AppendLine("Remove-Item -LiteralPath $src -Force -EA SilentlyContinue");
+        script.AppendLine("Remove-Item -LiteralPath $scr -Force -EA SilentlyContinue");
+        script.AppendLine("Write-Log 'Reiniciando aplicativo...'");
+        script.AppendLine("$workDir = Split-Path -LiteralPath $dst -Parent");
+        script.AppendLine("Start-Process -FilePath $dst -WorkingDirectory $workDir");
+        script.AppendLine("Write-Log 'Reinício solicitado'");
 
         File.WriteAllText(scriptPath, script.ToString(), System.Text.Encoding.UTF8);
 
-        _logger.LogInformation("Lançando updater: {Script}", scriptPath);
+        _logger.LogInformation("Lançando updater: {Script} (log: {Log})", scriptPath, logPath);
 
         Process.Start(new ProcessStartInfo
         {
             FileName        = "powershell.exe",
-            Arguments       = $"-ExecutionPolicy Bypass -WindowStyle Hidden -File \"{scriptPath}\"",
+            Arguments       = $"-ExecutionPolicy Bypass -Sta -File \"{scriptPath}\"",
             CreateNoWindow  = true,
-            UseShellExecute = false
+            UseShellExecute = false,
+            WindowStyle     = ProcessWindowStyle.Hidden
         });
 
         System.Windows.Application.Current.Shutdown();
