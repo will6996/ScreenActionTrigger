@@ -1,8 +1,8 @@
 {
-  "version":      "1.1.3",
-  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.3/ScreenActionTrigger.UI.exe",
-  "releaseNotes": "- Corrige crash ao abrir (estilo ComboBox no tema escuro)",
+  "version":      "1.1.4",
+  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.4/ScreenActionTrigger.UI.exe",
+  "releaseNotes": "- Corrige contraste: abas e ComboBox legíveis no tema escuro",
   "mandatory":    false,
-  "fileSize":     113085416,
+  "fileSize":     113086165,
   "releasedAt":   "2026-06-10T03:00:00Z"
 }

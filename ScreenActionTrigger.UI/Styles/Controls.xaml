@@ -95,32 +95,95 @@
         </Setter>
     </Style>
 
-    <!-- ComboBoxItem (dropdown legível no tema escuro) -->
+    <!-- ComboBoxItem — template próprio evita highlight claro do Windows -->
     <Style TargetType="ComboBoxItem">
-        <Setter Property="Background"   Value="{StaticResource BgElevatedBrush}"/>
-        <Setter Property="Foreground"   Value="{StaticResource TextPrimaryBrush}"/>
-        <Setter Property="Padding"      Value="8,6"/>
-        <Setter Property="FontSize"     Value="12"/>
-        <Style.Triggers>
-            <Trigger Property="IsHighlighted" Value="True">
-                <Setter Property="Background" Value="{StaticResource AccentPrimaryBrush}"/>
-                <Setter Property="Foreground" Value="White"/>
-            </Trigger>
-            <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Background" Value="{StaticResource BgCardBrush}"/>
-                <Setter Property="Foreground" Value="{StaticResource AccentPrimaryBrush}"/>
-            </Trigger>
-        </Style.Triggers>
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="Background"            Value="{StaticResource BgElevatedBrush}"/>
+        <Setter Property="Foreground"            Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="Padding"               Value="8,6"/>
+        <Setter Property="FontSize"              Value="12"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border x:Name="Bd" Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{StaticResource AccentPrimaryBrush}"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{StaticResource BgCardBrush}"/>
+                            <Setter Property="Foreground"
+                                    Value="{StaticResource TextPrimaryBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
-    <!-- ComboBox -->
+    <!-- ComboBox — tema escuro completo -->
     <Style TargetType="ComboBox">
-        <Setter Property="Background"    Value="{StaticResource BgElevatedBrush}"/>
-        <Setter Property="Foreground"    Value="{StaticResource TextPrimaryBrush}"/>
-        <Setter Property="BorderBrush"   Value="{StaticResource BgBorderBrush}"/>
-        <Setter Property="Padding"       Value="8,5"/>
-        <Setter Property="FontSize"      Value="12"/>
-        <Setter Property="Height"        Value="32"/>
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="Background"            Value="{StaticResource BgElevatedBrush}"/>
+        <Setter Property="Foreground"            Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="BorderBrush"           Value="{StaticResource BgBorderBrush}"/>
+        <Setter Property="Padding"               Value="8,5"/>
+        <Setter Property="FontSize"              Value="12"/>
+        <Setter Property="Height"                Value="32"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility"   Value="Auto"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <ToggleButton x:Name="Toggle"
+                                      Focusable="False"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay,
+                                                  RelativeSource={RelativeSource TemplatedParent}}"
+                                      ClickMode="Press">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="{StaticResource BgElevatedBrush}"
+                                            BorderBrush="{StaticResource BgBorderBrush}"
+                                            BorderThickness="1" CornerRadius="4"/>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <ContentPresenter x:Name="ContentSite" IsHitTestVisible="False"
+                            Content="{TemplateBinding SelectionBoxItem}"
+                            ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                            ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                            Margin="8,5,28,5" VerticalAlignment="Center"
+                            HorizontalAlignment="Left"/>
+                        <Path Data="M 0 0 L 4 4 L 8 0 Z"
+                              Fill="{StaticResource TextSecondaryBrush}"
+                              HorizontalAlignment="Right" VerticalAlignment="Center"
+                              Margin="0,0,10,0" IsHitTestVisible="False"/>
+                        <Popup x:Name="Popup" Placement="Bottom"
+                               IsOpen="{TemplateBinding IsDropDownOpen}"
+                               AllowsTransparency="True" Focusable="False"
+                               PopupAnimation="Slide">
+                            <Border MinWidth="{TemplateBinding ActualWidth}"
+                                    MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                    Background="{StaticResource BgCardBrush}"
+                                    BorderBrush="{StaticResource BgBorderBrush}"
+                                    BorderThickness="1" CornerRadius="4" Margin="0,2,0,0">
+                                <ScrollViewer SnapsToDevicePixels="True">
+                                    <StackPanel IsItemsHost="True"
+                                        KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- CheckBox -->
@@ -179,6 +242,7 @@
             </Trigger>
             <Trigger Property="IsSelected" Value="True">
                 <Setter Property="Background" Value="{StaticResource AccentPrimaryBrush}"/>
+                <Setter Property="Foreground" Value="White"/>
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -196,20 +260,52 @@
     </Style>
 
     <Style TargetType="TabItem">
-        <Setter Property="Foreground"         Value="{StaticResource TextSecondaryBrush}"/>
-        <Setter Property="Background"         Value="Transparent"/>
-        <Setter Property="BorderBrush"        Value="Transparent"/>
-        <Setter Property="FontSize"           Value="12"/>
-        <Setter Property="Padding"            Value="14,8"/>
-        <Style.Triggers>
-            <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Foreground" Value="{StaticResource AccentPrimaryBrush}"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
-            </Trigger>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-            </Trigger>
-        </Style.Triggers>
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="Foreground"            Value="{StaticResource TextSecondaryBrush}"/>
+        <Setter Property="Background"            Value="Transparent"/>
+        <Setter Property="BorderBrush"           Value="Transparent"/>
+        <Setter Property="FontSize"              Value="12"/>
+        <Setter Property="Padding"               Value="14,8"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="TabBorder"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="0,0,0,2"
+                            Padding="{TemplateBinding Padding}"
+                            Margin="0,0,2,0">
+                        <ContentPresenter ContentSource="Header"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="TabBorder" Property="Background"
+                                    Value="{StaticResource BgCardBrush}"/>
+                            <Setter TargetName="TabBorder" Property="BorderBrush"
+                                    Value="{StaticResource AccentPrimaryBrush}"/>
+                            <Setter Property="Foreground"
+                                    Value="{StaticResource AccentPrimaryBrush}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="TabBorder" Property="Background"
+                                    Value="{StaticResource BgElevatedBrush}"/>
+                            <Setter Property="Foreground"
+                                    Value="{StaticResource TextPrimaryBrush}"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="True"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Foreground"
+                                    Value="{StaticResource AccentPrimaryBrush}"/>
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ScrollBar (thin) -->

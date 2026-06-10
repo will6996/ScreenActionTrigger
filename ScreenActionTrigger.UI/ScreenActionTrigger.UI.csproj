@@ -10,7 +10,7 @@
     <RootNamespace>ScreenActionTrigger.UI</RootNamespace>
     <AssemblyTitle>Screen Action Trigger</AssemblyTitle>
     <Product>Screen Action Trigger</Product>
-    <Version>1.1.3</Version>
+    <Version>1.1.4</Version>
   </PropertyGroup>
 
   <!-- ═══════════════════════════════════════════════════════
