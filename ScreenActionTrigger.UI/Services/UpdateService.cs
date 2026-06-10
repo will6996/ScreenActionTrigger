@@ -19,7 +19,7 @@ public sealed class UpdateService : IUpdateService, IDisposable
     ///            "mandatory":false, "fileSize":165000000, "releasedAt":"2025-01-01T00:00:00Z" }
     /// </summary>
     public static string VersionManifestUrl { get; set; } =
-        "https://raw.githubusercontent.com/SEU_USUARIO/ScreenActionTrigger/main/version.json";
+        "https://raw.githubusercontent.com/will6996/ScreenActionTrigger/main/version.json";
 
     public Version CurrentVersion { get; } =
         Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
