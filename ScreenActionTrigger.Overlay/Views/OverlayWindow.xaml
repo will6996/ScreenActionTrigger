@@ -1,0 +1,78 @@
+<Window x:Class="ScreenActionTrigger.Overlay.Views.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:ScreenActionTrigger.Overlay.ViewModels"
+        Title="SAT Overlay"
+        AllowsTransparency="True"
+        Background="Transparent"
+        WindowStyle="None"
+        Topmost="True"
+        ShowInTaskbar="False"
+        IsHitTestVisible="False"
+        WindowStartupLocation="Manual"
+        Left="0" Top="0">
+
+    <Canvas x:Name="RootCanvas" Background="Transparent">
+
+        <!-- Monitored regions -->
+        <ItemsControl ItemsSource="{Binding Regions}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Canvas Background="Transparent"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                    <Setter Property="Canvas.Left"   Value="{Binding Left}"/>
+                    <Setter Property="Canvas.Top"    Value="{Binding Top}"/>
+                </Style>
+            </ItemsControl.ItemContainerStyle>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Rectangle Width="{Binding Width}" Height="{Binding Height}"
+                                   Stroke="#5500AAFF" StrokeThickness="2"
+                                   Fill="Transparent" StrokeDashArray="4 2"/>
+                        <TextBlock Text="{Binding Name}"
+                                   Foreground="#FF00AAFF"
+                                   FontSize="11" FontWeight="Bold"
+                                   Margin="4,-16,0,0"
+                                   VerticalAlignment="Top"/>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Active detections -->
+        <ItemsControl ItemsSource="{Binding Detections}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Canvas Background="Transparent"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                    <Setter Property="Canvas.Left"   Value="{Binding X}"/>
+                    <Setter Property="Canvas.Top"    Value="{Binding Y}"/>
+                </Style>
+            </ItemsControl.ItemContainerStyle>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Rectangle Width="{Binding Width}" Height="{Binding Height}"
+                                   Stroke="#FF00FF66" StrokeThickness="2.5"
+                                   Fill="#2000FF66" RadiusX="3" RadiusY="3"/>
+                        <Border Background="#CC1A1A2E" CornerRadius="4"
+                                Padding="5,2" HorizontalAlignment="Left"
+                                VerticalAlignment="Bottom" Margin="0,0,0,-22">
+                            <TextBlock Text="{Binding Label}"
+                                       Foreground="#FF00FF66"
+                                       FontSize="10" FontWeight="SemiBold"/>
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+    </Canvas>
+</Window>

@@ -1,0 +1,197 @@
+<UserControl x:Class="ScreenActionTrigger.UI.Views.RegionsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:ScreenActionTrigger.UI.ViewModels"
+             Background="{StaticResource BgBaseBrush}">
+
+    <Grid Margin="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260"/>
+            <ColumnDefinition Width="6"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left panel: region list -->
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="REGIÕES" Style="{StaticResource SectionTitleStyle}"/>
+
+            <!-- Toolbar -->
+            <WrapPanel Grid.Row="1" Margin="0,0,0,8" Orientation="Horizontal">
+                <Button Content="+ Adicionar"
+                        Style="{StaticResource AccentButtonStyle}"
+                        Command="{Binding AddRegionCommand}"
+                        Margin="0,0,4,0"/>
+                <Button Content="Selecionar da Tela"
+                        Style="{StaticResource BaseButtonStyle}"
+                        Command="{Binding SelectFromScreenCommand}"/>
+            </WrapPanel>
+
+            <!-- Filter -->
+            <TextBox Grid.Row="2" Margin="0,0,0,6" Height="30"
+                     Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
+                     Tag="Filtrar regiões…" VerticalContentAlignment="Center"/>
+
+            <!-- List -->
+            <ListView Grid.Row="2" Margin="0,36,0,0"
+                      ItemsSource="{Binding Regions}"
+                      SelectedItem="{Binding SelectedRegion}">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                <TextBlock Foreground="{StaticResource TextMutedBrush}" FontSize="10">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}{0},{1}  {2}×{3}">
+                                            <Binding Path="X"/>
+                                            <Binding Path="Y"/>
+                                            <Binding Path="Width"/>
+                                            <Binding Path="Height"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Priority, StringFormat='P{0}'}"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       VerticalAlignment="Center" Margin="4,0"/>
+                            <Ellipse Grid.Column="2" Width="8" Height="8" Margin="4,0,0,0"
+                                     VerticalAlignment="Center">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource AccentErrorBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsEnabled}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource AccentSuccessBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+                <ListView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Duplicar"
+                                  Command="{Binding DuplicateRegionCommand}"
+                                  CommandParameter="{Binding SelectedRegion}"/>
+                        <MenuItem Header="Ativar/Desativar"
+                                  Command="{Binding ToggleRegionCommand}"
+                                  CommandParameter="{Binding SelectedRegion}"/>
+                        <Separator/>
+                        <MenuItem Header="Mover para cima"
+                                  Command="{Binding MoveRegionUpCommand}"
+                                  CommandParameter="{Binding SelectedRegion}"/>
+                        <MenuItem Header="Mover para baixo"
+                                  Command="{Binding MoveRegionDownCommand}"
+                                  CommandParameter="{Binding SelectedRegion}"/>
+                        <Separator/>
+                        <MenuItem Header="Remover" Foreground="{StaticResource AccentErrorBrush}"
+                                  Command="{Binding RemoveRegionCommand}"
+                                  CommandParameter="{Binding SelectedRegion}"/>
+                    </ContextMenu>
+                </ListView.ContextMenu>
+            </ListView>
+
+            <!-- Bottom actions -->
+            <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,8,0,0">
+                <Button Content="▲" Style="{StaticResource GhostButtonStyle}" Width="32"
+                        Command="{Binding MoveRegionUpCommand}"
+                        CommandParameter="{Binding SelectedRegion}"/>
+                <Button Content="▼" Style="{StaticResource GhostButtonStyle}" Width="32"
+                        Command="{Binding MoveRegionDownCommand}"
+                        CommandParameter="{Binding SelectedRegion}"/>
+                <Button Content="🗑" Style="{StaticResource DangerButtonStyle}"
+                        Margin="8,0,0,0"
+                        Command="{Binding RemoveRegionCommand}"
+                        CommandParameter="{Binding SelectedRegion}"/>
+            </StackPanel>
+        </Grid>
+
+        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch"/>
+
+        <!-- Right panel: region properties -->
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+            <Grid Margin="12,0,0,0">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedRegion}" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <StackPanel DataContext="{Binding SelectedRegion}">
+                    <TextBlock Text="PROPRIEDADES" Style="{StaticResource SectionTitleStyle}"/>
+
+                    <!-- Name -->
+                    <TextBlock Text="Nome" Style="{StaticResource LabelStyle}"/>
+                    <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10"/>
+
+                    <!-- Group -->
+                    <TextBlock Text="Grupo" Style="{StaticResource LabelStyle}"/>
+                    <TextBox Text="{Binding GroupName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10"/>
+
+                    <!-- Coordinates -->
+                    <TextBlock Text="Posição e Tamanho" Style="{StaticResource SectionTitleStyle}" Margin="0,8,0,6"/>
+                    <UniformGrid Columns="4" Margin="0,0,0,10">
+                        <StackPanel Margin="0,0,6,0">
+                            <TextBlock Text="X" Style="{StaticResource LabelStyle}"/>
+                            <TextBox Text="{Binding X, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,6,0">
+                            <TextBlock Text="Y" Style="{StaticResource LabelStyle}"/>
+                            <TextBox Text="{Binding Y, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,6,0">
+                            <TextBlock Text="Largura" Style="{StaticResource LabelStyle}"/>
+                            <TextBox Text="{Binding Width, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Altura" Style="{StaticResource LabelStyle}"/>
+                            <TextBox Text="{Binding Height, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                    </UniformGrid>
+
+                    <!-- Status & Priority -->
+                    <UniformGrid Columns="2" Margin="0,0,0,10">
+                        <StackPanel Margin="0,0,6,0">
+                            <TextBlock Text="Prioridade" Style="{StaticResource LabelStyle}"/>
+                            <TextBox Text="{Binding Priority, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Status" Style="{StaticResource LabelStyle}"/>
+                            <CheckBox Content="Ativo" IsChecked="{Binding IsEnabled}" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </UniformGrid>
+
+                    <!-- Visual preview placeholder -->
+                    <TextBlock Text="Prévia da Região" Style="{StaticResource SectionTitleStyle}" Margin="0,8,0,6"/>
+                    <Border Background="{StaticResource BgCardBrush}"
+                            BorderBrush="{StaticResource AccentPrimaryBrush}"
+                            BorderThickness="1" CornerRadius="4" Height="120">
+                        <TextBlock Text="[Prévia em tempo real disponível durante monitoramento]"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   TextWrapping="Wrap" TextAlignment="Center"
+                                   Margin="12"/>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

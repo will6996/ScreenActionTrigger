@@ -1,0 +1,217 @@
+<UserControl x:Class="ScreenActionTrigger.UI.Views.UpdateView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BgBaseBrush}">
+    <ScrollViewer>
+        <StackPanel Margin="20" MaxWidth="600">
+
+            <!-- Cabeçalho -->
+            <TextBlock Text="ATUALIZAÇÕES" Style="{StaticResource HeadingStyle}"
+                       Margin="0,0,0,20"/>
+
+            <!-- Card de versão atual -->
+            <Border Background="{StaticResource BgCardBrush}" CornerRadius="8"
+                    Padding="16" Margin="0,0,0,12"
+                    BorderBrush="{StaticResource BgBorderBrush}" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Versão instalada"
+                                   Style="{StaticResource LabelStyle}"/>
+                        <TextBlock Text="{Binding CurrentVersion, StringFormat='v{0}'}"
+                                   FontSize="22" FontWeight="Bold"
+                                   Foreground="{StaticResource AccentPrimaryBrush}"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="🔍  Verificar agora"
+                            Style="{StaticResource BaseButtonStyle}"
+                            Command="{Binding CheckForUpdatesCommand}"
+                            IsEnabled="{Binding IsChecking,
+                                Converter={StaticResource InverseBoolConverter}}"
+                            VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- Indicador de verificação -->
+            <Border Background="{StaticResource BgCardBrush}" CornerRadius="8"
+                    Padding="14" Margin="0,0,0,12"
+                    Visibility="{Binding IsChecking,
+                        Converter={StaticResource BoolToVisConverter}}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="⏳" FontSize="16" Margin="0,0,8,0"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="Verificando atualizações..."
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Mensagem de status (sem update ou erro) -->
+            <Border Background="{StaticResource BgCardBrush}" CornerRadius="8"
+                    Padding="14" Margin="0,0,0,12">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding UpdateAvailable}" Value="False"/>
+                                    <Condition Binding="{Binding IsChecking}"      Value="False"/>
+                                    <Condition Binding="{Binding IsDownloading}"   Value="False"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <TextBlock Text="{Binding UpdateMessage}"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           TextWrapping="Wrap"/>
+            </Border>
+
+            <!-- Card de nova versão disponível -->
+            <Border CornerRadius="8" Padding="16" Margin="0,0,0,12"
+                    BorderThickness="1"
+                    Visibility="{Binding UpdateAvailable,
+                        Converter={StaticResource BoolToVisConverter}}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background"
+                                Value="{StaticResource BgCardBrush}"/>
+                        <Setter Property="BorderBrush"
+                                Value="{StaticResource AccentWarningBrush}"/>
+                    </Style>
+                </Border.Style>
+                <StackPanel>
+                    <!-- Header -->
+                    <DockPanel Margin="0,0,0,12" LastChildFill="False">
+                        <StackPanel DockPanel.Dock="Left">
+                            <TextBlock Text="Nova versão disponível"
+                                       Style="{StaticResource LabelStyle}"/>
+                            <TextBlock Text="{Binding LatestVersion,
+                                           StringFormat='v{0}'}"
+                                       FontSize="22" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentWarningBrush}"/>
+                        </StackPanel>
+                        <!-- Badge obrigatório -->
+                        <Border DockPanel.Dock="Right"
+                                Background="{StaticResource AccentErrorBrush}"
+                                CornerRadius="4" Padding="8,3"
+                                VerticalAlignment="Top"
+                                Visibility="{Binding IsMandatory,
+                                    Converter={StaticResource BoolToVisConverter}}">
+                            <TextBlock Text="OBRIGATÓRIA" Foreground="White"
+                                       FontSize="10" FontWeight="Bold"/>
+                        </Border>
+                    </DockPanel>
+
+                    <!-- Mensagem update -->
+                    <TextBlock Text="{Binding UpdateMessage}"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+                    <!-- Release Notes -->
+                    <TextBlock Text="Novidades nesta versão:"
+                               Style="{StaticResource LabelStyle}"
+                               Margin="0,0,0,4"
+                               Visibility="{Binding ReleaseNotes,
+                                   Converter={StaticResource NotNullToBoolConverter},
+                                   ConverterParameter=visibility}"/>
+                    <Border Background="{StaticResource BgElevatedBrush}"
+                            CornerRadius="4" Padding="10" Margin="0,0,0,14"
+                            MaxHeight="160">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock Text="{Binding ReleaseNotes}"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       FontSize="11" TextWrapping="Wrap"
+                                       FontFamily="Consolas"/>
+                        </ScrollViewer>
+                    </Border>
+
+                    <!-- Progresso do download -->
+                    <StackPanel Visibility="{Binding IsDownloading,
+                                    Converter={StaticResource BoolToVisConverter}}"
+                                Margin="0,0,0,12">
+                        <TextBlock Text="{Binding DownloadStatus}"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="11" Margin="0,0,0,6"/>
+                        <ProgressBar Value="{Binding DownloadProgress}"
+                                     Minimum="0" Maximum="100" Height="8"
+                                     Foreground="{StaticResource AccentPrimaryBrush}"
+                                     Background="{StaticResource BgElevatedBrush}"/>
+                        <TextBlock Text="{Binding DownloadProgress,
+                                       StringFormat='{}{0:F0}%'}"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="10" HorizontalAlignment="Right"
+                                   Margin="0,3,0,0"/>
+                    </StackPanel>
+
+                    <!-- Botões de ação -->
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsDownloading,
+                                    Converter={StaticResource InverseBoolToVisConverter}}">
+                        <Button Content="⬇  Baixar e Instalar"
+                                Style="{StaticResource SuccessButtonStyle}"
+                                Command="{Binding DownloadAndApplyCommand}"
+                                Margin="0,0,8,0"/>
+                        <Button Content="Agora não"
+                                Style="{StaticResource BaseButtonStyle}"
+                                Command="{Binding DismissUpdateCommand}"
+                                IsEnabled="{Binding IsMandatory,
+                                    Converter={StaticResource InverseBoolConverter}}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Instruções de configuração -->
+            <Border Background="{StaticResource BgCardBrush}" CornerRadius="8"
+                    Padding="16" Margin="0,12,0,0"
+                    BorderBrush="{StaticResource BgBorderBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="Como configurar o servidor de atualização"
+                               Style="{StaticResource SectionTitleStyle}"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="11"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               LineHeight="20">
+                        <Run Text="1. Hospede um arquivo "/>
+                        <Run Text="version.json" FontWeight="Bold"
+                             Foreground="{StaticResource AccentPrimaryBrush}"/>
+                        <Run Text=" em qualquer URL pública (GitHub Pages, GitHub raw, etc.)."/>
+                        <LineBreak/>
+                        <Run Text="2. Configure a URL em "/>
+                        <Run Text="UpdateService.VersionManifestUrl" FontFamily="Consolas"
+                             Foreground="{StaticResource AccentPrimaryBrush}"/>
+                        <Run Text=" no código."/>
+                        <LineBreak/>
+                        <Run Text="3. Para lançar uma atualização: compile com "/>
+                        <Run Text=".uild.ps1 -publish sc" FontFamily="Consolas"
+                             Foreground="{StaticResource AccentPrimaryBrush}"/>
+                        <Run Text=", suba o .exe e atualize o version.json."/>
+                    </TextBlock>
+
+                    <!-- Exemplo de version.json -->
+                    <TextBlock Text="Exemplo de version.json:"
+                               Style="{StaticResource LabelStyle}" Margin="0,12,0,4"/>
+                    <Border Background="{StaticResource BgDeepBrush}"
+                            CornerRadius="4" Padding="12">
+                        <TextBlock FontFamily="Consolas" FontSize="11"
+                                   Foreground="{StaticResource AccentSuccessBrush}"
+                                   TextWrapping="Wrap">
+<![CDATA[{
+  "version":      "1.1.0",
+  "downloadUrl":  "https://github.com/SEU_USUARIO/SAT/releases/download/v1.1.0/ScreenActionTrigger.UI.exe",
+  "releaseNotes": "- Melhorias de performance\n- Novo detector de mudança",
+  "mandatory":    false,
+  "fileSize":     165000000,
+  "releasedAt":   "2025-06-10T12:00:00Z"
+}]]>
+                        </TextBlock>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

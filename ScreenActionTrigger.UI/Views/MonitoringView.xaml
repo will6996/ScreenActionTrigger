@@ -1,0 +1,126 @@
+<UserControl x:Class="ScreenActionTrigger.UI.Views.MonitoringView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BgBaseBrush}">
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Stats bar -->
+        <Border Grid.Row="0" Background="{StaticResource BgCardBrush}"
+                BorderBrush="{StaticResource BgBorderBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,0,10">
+            <UniformGrid Columns="5">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Detecções" Style="{StaticResource LabelStyle}" TextAlignment="Center"/>
+                    <TextBlock Text="{Binding TotalDetections}"
+                               FontSize="22" FontWeight="Bold"
+                               Foreground="{StaticResource AccentPrimaryBrush}"
+                               TextAlignment="Center"/>
+                </StackPanel>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Execuções" Style="{StaticResource LabelStyle}" TextAlignment="Center"/>
+                    <TextBlock Text="{Binding TotalExecutions}"
+                               FontSize="22" FontWeight="Bold"
+                               Foreground="{StaticResource AccentSuccessBrush}"
+                               TextAlignment="Center"/>
+                </StackPanel>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Erros" Style="{StaticResource LabelStyle}" TextAlignment="Center"/>
+                    <TextBlock Text="{Binding TotalErrors}"
+                               FontSize="22" FontWeight="Bold"
+                               Foreground="{StaticResource AccentErrorBrush}"
+                               TextAlignment="Center"/>
+                </StackPanel>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Conf. Média" Style="{StaticResource LabelStyle}" TextAlignment="Center"/>
+                    <TextBlock Text="{Binding AvgConfidence, StringFormat=P1}"
+                               FontSize="22" FontWeight="Bold"
+                               Foreground="{StaticResource AccentWarningBrush}"
+                               TextAlignment="Center"/>
+                </StackPanel>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="Fila de Ações" Style="{StaticResource LabelStyle}" TextAlignment="Center"/>
+                    <TextBlock Text="{Binding QueueLength, FallbackValue='—'}"
+                               FontSize="22" FontWeight="Bold"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               TextAlignment="Center"/>
+                </StackPanel>
+            </UniformGrid>
+        </Border>
+
+        <!-- Toolbar -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBox Width="180" Margin="0,0,8,0"
+                     Text="{Binding FilterRegion, UpdateSourceTrigger=PropertyChanged}"
+                     Tag="Filtrar por região…"/>
+            <CheckBox Content="Apenas executados"
+                      IsChecked="{Binding ShowOnlyExecuted}"
+                      VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <CheckBox Content="Auto-scroll"
+                      IsChecked="{Binding AutoScroll}"
+                      VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <Button Content="🗑 Limpar" Style="{StaticResource BaseButtonStyle}"
+                    Command="{Binding ClearEntriesCommand}" Margin="0,0,4,0"/>
+            <Button Content="📤 Exportar CSV" Style="{StaticResource BaseButtonStyle}"
+                    Command="{Binding ExportLogAsyncCommand}"/>
+        </StackPanel>
+
+        <!-- Log grid -->
+        <ListView Grid.Row="2"
+                  ItemsSource="{Binding FilteredEntries}"
+                  SelectedItem="{Binding SelectedEntry}"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  ScrollViewer.CanContentScroll="True">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Hora" Width="90"
+                        DisplayMemberBinding="{Binding Timestamp, StringFormat=HH:mm:ss.fff}"/>
+                    <GridViewColumn Header="Região" Width="120"
+                        DisplayMemberBinding="{Binding RegionName}"/>
+                    <GridViewColumn Header="Regra" Width="140"
+                        DisplayMemberBinding="{Binding RuleName}"/>
+                    <GridViewColumn Header="Ação" Width="160"
+                        DisplayMemberBinding="{Binding ActionName}"/>
+                    <GridViewColumn Header="Tipo" Width="100"
+                        DisplayMemberBinding="{Binding DetectionType}"/>
+                    <GridViewColumn Header="Confiança" Width="80">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Confidence, StringFormat=P2}"
+                                           Foreground="{Binding Confidence,
+                                               Converter={StaticResource ConfidenceToColorConverter}}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="OK" Width="40">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock HorizontalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="✗"/>
+                                            <Setter Property="Foreground" Value="{StaticResource AccentErrorBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding WasExecuted}" Value="True">
+                                                    <Setter Property="Text" Value="✓"/>
+                                                    <Setter Property="Foreground"
+                                                            Value="{StaticResource AccentSuccessBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </Grid>
+</UserControl>

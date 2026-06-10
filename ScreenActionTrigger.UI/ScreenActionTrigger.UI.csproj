@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>ScreenActionTrigger.UI</RootNamespace>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+    <AssemblyTitle>Screen Action Trigger</AssemblyTitle>
+    <Product>Screen Action Trigger</Product>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SINGLE-FILE PUBLISH SUPPORT
+       Garante que recursos XAML/BAML fiquem embutidos no .exe
+       ═══════════════════════════════════════════════════════ -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
+    <!-- Garante que recursos estáticos (ícones, etc.) sejam embutidos -->
+    <UseAppHost>true</UseAppHost>
+    <!-- Evita extração desnecessária de assemblies gerenciados -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ScreenActionTrigger.Core\ScreenActionTrigger.Core.csproj" />
+    <ProjectReference Include="..\ScreenActionTrigger.Vision\ScreenActionTrigger.Vision.csproj" />
+    <ProjectReference Include="..\ScreenActionTrigger.Input\ScreenActionTrigger.Input.csproj" />
+    <ProjectReference Include="..\ScreenActionTrigger.Persistence\ScreenActionTrigger.Persistence.csproj" />
+    <ProjectReference Include="..\ScreenActionTrigger.Overlay\ScreenActionTrigger.Overlay.csproj" />
+  </ItemGroup>
+</Project>

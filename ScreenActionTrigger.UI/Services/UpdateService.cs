@@ -1,0 +1,224 @@
+using System.Diagnostics;
+using System.Net.Http;
+using System.Reflection;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using ScreenActionTrigger.Core.Interfaces;
+using ScreenActionTrigger.Core.Models;
+
+namespace ScreenActionTrigger.UI.Services;
+
+public sealed class UpdateService : IUpdateService, IDisposable
+{
+    private readonly HttpClient             _http;
+    private readonly ILogger<UpdateService> _logger;
+
+    /// <summary>
+    /// URL do version.json hospedado (GitHub Pages, raw.githubusercontent.com, etc.).
+    /// Formato: { "version":"1.1.0", "downloadUrl":"https://...", "releaseNotes":"...",
+    ///            "mandatory":false, "fileSize":165000000, "releasedAt":"2025-01-01T00:00:00Z" }
+    /// </summary>
+    public static string VersionManifestUrl { get; set; } =
+        "https://raw.githubusercontent.com/SEU_USUARIO/ScreenActionTrigger/main/version.json";
+
+    public Version CurrentVersion { get; } =
+        Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
+
+    public UpdateService(ILogger<UpdateService> logger)
+    {
+        _logger = logger;
+        _http   = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+        _http.DefaultRequestHeaders.Add("User-Agent", "ScreenActionTrigger-Updater/1.0");
+    }
+
+    // ─── Verificar via version.json ───────────────────────────────────────────
+    public async Task<UpdateInfo?> CheckAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            _logger.LogInformation("Verificando atualizações em {Url}", VersionManifestUrl);
+            var json = await _http.GetStringAsync(VersionManifestUrl, ct);
+
+            var manifest = JsonSerializer.Deserialize<RemoteVersionManifest>(json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (manifest is null) return null;
+
+            var latest = Version.Parse(manifest.Version);
+            var info   = new UpdateInfo
+            {
+                CurrentVersion = CurrentVersion,
+                LatestVersion  = latest,
+                DownloadUrl    = manifest.DownloadUrl,
+                ReleaseNotes   = manifest.ReleaseNotes,
+                IsMandatory    = manifest.Mandatory,
+                FileSizeBytes  = manifest.FileSize,
+                ReleasedAt     = DateTime.TryParse(manifest.ReleasedAt, out var dt) ? dt : DateTime.UtcNow
+            };
+
+            _logger.LogInformation("Atual: {Cur}  Remota: {Lat}  Nova versão: {Has}",
+                CurrentVersion, latest, info.IsUpdateAvailable);
+
+            return info;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao verificar atualizações");
+            return null;
+        }
+    }
+
+    // ─── Alternativa: verificar via GitHub Releases API ───────────────────────
+    public async Task<UpdateInfo?> CheckViaGitHubAsync(
+        string owner, string repo, CancellationToken ct = default)
+    {
+        try
+        {
+            var url      = $"https://api.github.com/repos/{owner}/{repo}/releases/latest";
+            var json     = await _http.GetStringAsync(url, ct);
+            using var doc = JsonDocument.Parse(json);
+            var root      = doc.RootElement;
+
+            var tag      = root.GetProperty("tag_name").GetString()?.TrimStart('v') ?? "1.0.0";
+            var latest   = Version.Parse(tag);
+            var body     = root.TryGetProperty("body", out var b) ? b.GetString() ?? "" : "";
+            var pub      = root.TryGetProperty("published_at", out var p) ? p.GetString() ?? "" : "";
+
+            string dlUrl   = string.Empty;
+            long   dlSize  = 0;
+
+            if (root.TryGetProperty("assets", out var assets))
+                foreach (var asset in assets.EnumerateArray())
+                {
+                    var name = asset.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
+                    if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                    {
+                        dlUrl  = asset.TryGetProperty("browser_download_url", out var u)
+                            ? u.GetString() ?? "" : "";
+                        dlSize = asset.TryGetProperty("size", out var s) ? s.GetInt64() : 0;
+                        break;
+                    }
+                }
+
+            return new UpdateInfo
+            {
+                CurrentVersion = CurrentVersion,
+                LatestVersion  = latest,
+                DownloadUrl    = dlUrl,
+                ReleaseNotes   = body,
+                FileSizeBytes  = dlSize,
+                ReleasedAt     = string.IsNullOrEmpty(pub) ? DateTime.UtcNow : DateTime.Parse(pub)
+            };
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao verificar GitHub Releases");
+            return null;
+        }
+    }
+
+    // ─── Download do novo executável ──────────────────────────────────────────
+    public async Task<string> DownloadAsync(
+        UpdateInfo info,
+        IProgress<(long downloaded, long total, double percent)>? progress = null,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(info.DownloadUrl))
+            throw new InvalidOperationException("URL de download não definida no manifesto.");
+
+        var dest = Path.Combine(Path.GetTempPath(),
+            $"SAT_Update_v{info.LatestVersion}.exe");
+
+        _logger.LogInformation("Baixando v{V} de {Url}", info.LatestVersion, info.DownloadUrl);
+
+        using var response = await _http.GetAsync(
+            info.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct);
+
+        response.EnsureSuccessStatusCode();
+
+        var total = response.Content.Headers.ContentLength ?? info.FileSizeBytes;
+
+        await using var src  = await response.Content.ReadAsStreamAsync(ct);
+        await using var file = File.Create(dest);
+
+        var  buf        = new byte[81_920];
+        long downloaded = 0;
+        int  read;
+
+        while ((read = await src.ReadAsync(buf, ct)) > 0)
+        {
+            await file.WriteAsync(buf.AsMemory(0, read), ct);
+            downloaded += read;
+            progress?.Report((downloaded, total,
+                total > 0 ? (double)downloaded / total * 100.0 : 0));
+        }
+
+        _logger.LogInformation("Download completo: {Size}", info.FileSizeFormatted);
+        return dest;
+    }
+
+    // ─── Aplicar atualização + reiniciar via PowerShell ───────────────────────
+    public void ApplyAndRestart(string downloadedExePath)
+    {
+        var currentExe = Environment.ProcessPath
+            ?? System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName
+            ?? throw new InvalidOperationException("Caminho do executável não encontrado.");
+
+        var pid        = Environment.ProcessId;
+        var scriptPath = Path.Combine(Path.GetTempPath(), "SAT_Apply_Update.ps1");
+
+        // Escapa barras para uso no script PowerShell
+        var srcEsc  = downloadedExePath.Replace("'", "''");
+        var dstEsc  = currentExe.Replace("'", "''");
+        var scrEsc  = scriptPath.Replace("'", "''");
+
+        var script = new System.Text.StringBuilder();
+        script.AppendLine("# Screen Action Trigger — Auto-Update Script");
+        script.AppendLine($"# Gerado em: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        script.AppendLine($"$pid = {pid}");
+        script.AppendLine($"$src = '{srcEsc}'");
+        script.AppendLine($"$dst = '{dstEsc}'");
+        script.AppendLine($"$scr = '{scrEsc}'");
+        script.AppendLine("");
+        script.AppendLine("Write-Host 'SAT Updater: aguardando processo fechar...'");
+        script.AppendLine("$limit = 30; $elapsed = 0");
+        script.AppendLine("while ((Get-Process -Id $pid -EA SilentlyContinue) -and $elapsed -lt $limit) {");
+        script.AppendLine("    Start-Sleep -Milliseconds 500; $elapsed += 0.5");
+        script.AppendLine("}");
+        script.AppendLine("if (Get-Process -Id $pid -EA SilentlyContinue) {");
+        script.AppendLine("    Stop-Process -Id $pid -Force -EA SilentlyContinue");
+        script.AppendLine("    Start-Sleep -Seconds 1");
+        script.AppendLine("}");
+        script.AppendLine("Write-Host 'SAT Updater: aplicando...'");
+        script.AppendLine("try {");
+        script.AppendLine("    Copy-Item -Path $src -Destination $dst -Force -EA Stop");
+        script.AppendLine("    Write-Host 'SAT Updater: sucesso.'");
+        script.AppendLine("} catch {");
+        script.AppendLine("    Write-Host \"SAT Updater: ERRO: $_\"");
+        script.AppendLine("    Read-Host 'Pressione Enter para sair'");
+        script.AppendLine("    exit 1");
+        script.AppendLine("}");
+        script.AppendLine("Remove-Item $src -Force -EA SilentlyContinue");
+        script.AppendLine("Remove-Item $scr -Force -EA SilentlyContinue");
+        script.AppendLine("Write-Host 'SAT Updater: reiniciando...'");
+        script.AppendLine("Start-Process -FilePath $dst");
+
+        File.WriteAllText(scriptPath, script.ToString(), System.Text.Encoding.UTF8);
+
+        _logger.LogInformation("Lançando updater: {Script}", scriptPath);
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName        = "powershell.exe",
+            Arguments       = $"-ExecutionPolicy Bypass -WindowStyle Hidden -File \"{scriptPath}\"",
+            CreateNoWindow  = true,
+            UseShellExecute = false
+        });
+
+        System.Windows.Application.Current.Shutdown();
+    }
+
+    public void Dispose() => _http.Dispose();
+}
