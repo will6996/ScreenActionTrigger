@@ -1,8 +1,8 @@
 {
-  "version":      "1.1.11",
-  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.11/ScreenActionTrigger.UI.exe",
-  "releaseNotes": "- Detecta ícones pequenos (pixels mínimos) em regiões grandes\n- Corrige clique do mouse em jogos\n- Color picker nas cores adicionais\n- Log de diagnóstico quando cor quase bate mas não dispara",
+  "version":      "1.1.12",
+  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.12/ScreenActionTrigger.UI.exe",
+  "releaseNotes": "- Menu de contexto legível no tema escuro\n- Corrige Remover/Duplicar no clique direito das regras e regiões",
   "mandatory":    false,
-  "fileSize": 113157111,
-  "releasedAt":   "2026-06-09T22:00:00Z"
+  "fileSize": 113157411,
+  "releasedAt":   "2026-06-09T23:00:00Z"
 }

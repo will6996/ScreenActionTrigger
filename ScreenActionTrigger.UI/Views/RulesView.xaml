@@ -34,6 +34,7 @@
             </StackPanel>
 
             <ListView Grid.Row="2"
+                      Tag="{Binding}"
                       ItemsSource="{Binding FilteredRules}"
                       SelectedItem="{Binding SelectedRule}">
                 <ListView.ItemTemplate>
@@ -78,22 +79,26 @@
                     <ContextMenu>
                         <MenuItem Header="Duplicar"
                                   Command="{Binding PlacementTarget.Tag.DuplicateRuleCommand,
-                                                RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                  CommandParameter="{Binding}"/>
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding PlacementTarget.SelectedItem,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                         <MenuItem Header="Resetar contadores"
                                   Command="{Binding PlacementTarget.Tag.ResetRuleCommand,
-                                                RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                  CommandParameter="{Binding}"/>
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding PlacementTarget.SelectedItem,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                         <MenuItem Header="Ativar / Desativar"
                                   Command="{Binding PlacementTarget.Tag.ToggleRuleCommand,
-                                                RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                  CommandParameter="{Binding}"/>
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding PlacementTarget.SelectedItem,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                         <Separator/>
                         <MenuItem Header="Remover"
                                   Foreground="{StaticResource AccentErrorBrush}"
                                   Command="{Binding PlacementTarget.Tag.RemoveRuleCommand,
-                                                RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                  CommandParameter="{Binding}"/>
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding PlacementTarget.SelectedItem,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     </ContextMenu>
                 </ListView.ContextMenu>
             </ListView>

@@ -40,6 +40,7 @@
 
             <!-- List -->
             <ListView Grid.Row="2" Margin="0,36,0,0"
+                      Tag="{Binding}"
                       ItemsSource="{Binding Regions}"
                       SelectedItem="{Binding SelectedRegion}">
                 <ListView.ItemTemplate>
@@ -86,22 +87,33 @@
                 <ListView.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="Duplicar"
-                                  Command="{Binding DuplicateRegionCommand}"
-                                  CommandParameter="{Binding SelectedRegion}"/>
+                                  Command="{Binding PlacementTarget.Tag.DuplicateRegionCommand,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding PlacementTarget.SelectedItem,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                         <MenuItem Header="Ativar/Desativar"
-                                  Command="{Binding ToggleRegionCommand}"
-                                  CommandParameter="{Binding SelectedRegion}"/>
+                                  Command="{Binding PlacementTarget.Tag.ToggleRegionCommand,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding PlacementTarget.SelectedItem,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                         <Separator/>
                         <MenuItem Header="Mover para cima"
-                                  Command="{Binding MoveRegionUpCommand}"
-                                  CommandParameter="{Binding SelectedRegion}"/>
+                                  Command="{Binding PlacementTarget.Tag.MoveRegionUpCommand,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding PlacementTarget.SelectedItem,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                         <MenuItem Header="Mover para baixo"
-                                  Command="{Binding MoveRegionDownCommand}"
-                                  CommandParameter="{Binding SelectedRegion}"/>
+                                  Command="{Binding PlacementTarget.Tag.MoveRegionDownCommand,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding PlacementTarget.SelectedItem,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                         <Separator/>
-                        <MenuItem Header="Remover" Foreground="{StaticResource AccentErrorBrush}"
-                                  Command="{Binding RemoveRegionCommand}"
-                                  CommandParameter="{Binding SelectedRegion}"/>
+                        <MenuItem Header="Remover"
+                                  Foreground="{StaticResource AccentErrorBrush}"
+                                  Command="{Binding PlacementTarget.Tag.RemoveRegionCommand,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding PlacementTarget.SelectedItem,
+                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                     </ContextMenu>
                 </ListView.ContextMenu>
             </ListView>
