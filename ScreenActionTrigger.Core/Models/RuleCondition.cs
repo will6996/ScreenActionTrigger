@@ -15,6 +15,8 @@ public sealed class RuleCondition
     public ObservableCollection<string> TargetColors { get; set; } = new();
     public int ColorTolerance { get; set; } = 15;
     public double MinColorPercentage { get; set; } = 0.30;
+    /// <summary>Se &gt; 0, dispara quando houver pelo menos N pixels da cor (ideal para ícones pequenos).</summary>
+    public int MinMatchingPixels { get; set; } = 0;
     public bool UseDominantColor { get; set; } = false;
 
     // Change detection
@@ -47,7 +49,9 @@ public sealed class RuleCondition
 
     public string GetDescription() => Type switch
     {
-        ConditionType.ColorDetection   => $"Cor {string.Join("/", GetAllTargetColors())} > {MinColorPercentage:P0}",
+        ConditionType.ColorDetection   => MinMatchingPixels > 0
+            ? $"Cor {string.Join("/", GetAllTargetColors())} ≥ {MinMatchingPixels}px"
+            : $"Cor {string.Join("/", GetAllTargetColors())} > {MinColorPercentage:P0}",
         ConditionType.ChangeDetection  => $"Mudança > {MinChangePercentage:P0}",
         ConditionType.TemplateMatching => $"Template {TemplateId}",
         ConditionType.Composite        => $"{Operator} ({SubConditions.Count} condições)",

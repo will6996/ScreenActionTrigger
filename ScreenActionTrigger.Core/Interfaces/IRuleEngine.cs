@@ -33,5 +33,6 @@ public sealed class DetectionEventArgs : EventArgs
 {
     public required DetectionResult Detection { get; init; }
     public required MonitoredRegion Region { get; init; }
+    public VisualRule? EvaluatedRule { get; init; }
     public VisualRule? MatchedRule { get; init; }
 }

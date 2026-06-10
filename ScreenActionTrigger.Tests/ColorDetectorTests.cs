@@ -50,6 +50,32 @@ public sealed class ColorDetectorTests
     }
 
     [Fact]
+    public void Detect_SmallColorPatch_MinMatchingPixels_Triggers()
+    {
+        // 10x10 blue patch on 100x100 black — only 1% of pixels
+        using var bmp = new Bitmap(100, 100, PixelFormat.Format32bppArgb);
+        using var g = Graphics.FromImage(bmp);
+        g.Clear(Color.Black);
+        g.FillRectangle(Brushes.Blue, 45, 45, 10, 10);
+        using var ms = new MemoryStream();
+        bmp.Save(ms, ImageFormat.Png);
+        var frame = ms.ToArray();
+
+        var region = new MonitoredRegion { Id = Guid.NewGuid(), Width = 100, Height = 100 };
+        var condition = new RuleCondition
+        {
+            Type = ConditionType.ColorDetection,
+            TargetColor = "#0000FF",
+            ColorTolerance = 10,
+            MinColorPercentage = 0.30,
+            MinMatchingPixels = 50
+        };
+
+        var result = _detector.Detect(frame, region, condition);
+        result.IsMatch.Should().BeTrue();
+    }
+
+    [Fact]
     public void Detect_SolidBlueImage_AllBluePixels_ShouldMatch()
     {
         var frame = CreateSolidColorPng(100, 100, Color.Blue);

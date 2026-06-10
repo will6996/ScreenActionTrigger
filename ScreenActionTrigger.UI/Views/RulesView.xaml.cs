@@ -16,16 +16,18 @@ public partial class RulesView : UserControl
         {
             if (_vm is not null)
             {
-                _vm.ColorPickRequested      -= OnColorPickRequested;
-                _vm.PathRecordingRequested  -= OnPathRecordingRequested;
+                _vm.ColorPickRequested       -= OnColorPickRequested;
+                _vm.ExtraColorPickRequested  -= OnExtraColorPickRequested;
+                _vm.PathRecordingRequested   -= OnPathRecordingRequested;
             }
 
             _vm = DataContext as RulesViewModel;
 
             if (_vm is not null)
             {
-                _vm.ColorPickRequested     += OnColorPickRequested;
-                _vm.PathRecordingRequested += OnPathRecordingRequested;
+                _vm.ColorPickRequested      += OnColorPickRequested;
+                _vm.ExtraColorPickRequested += OnExtraColorPickRequested;
+                _vm.PathRecordingRequested  += OnPathRecordingRequested;
             }
         };
     }
@@ -34,6 +36,13 @@ public partial class RulesView : UserControl
     {
         var overlay = new ColorPickerOverlay();
         overlay.ColorSelected += (_, hex) => _vm?.ApplyPickedColor(condition, hex);
+        overlay.ShowDialog();
+    }
+
+    private void OnExtraColorPickRequested(object? sender, EventArgs e)
+    {
+        var overlay = new ColorPickerOverlay();
+        overlay.ColorSelected += (_, hex) => _vm?.ApplyPickedExtraColor(hex);
         overlay.ShowDialog();
     }
 

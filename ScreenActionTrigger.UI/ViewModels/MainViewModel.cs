@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using ScreenActionTrigger.Core;
 using ScreenActionTrigger.Core.Interfaces;
 using ScreenActionTrigger.Core.Models;
 using ScreenActionTrigger.UI.Infrastructure;
@@ -83,10 +84,22 @@ public sealed partial class MainViewModel : ObservableObject
             Profile.Templates = new List<Template>(TemplatesVM.Templates);
             Profile.Settings  = SettingsVM.Settings;
 
+            foreach (var rule in Profile.Rules)
+                ProfileRepair.EnsureRuleCollections(rule);
+            ProfileRepair.RepairRuleRegionLinks(Profile.Rules, Profile.Regions);
+
+            var activeRules = Profile.Rules.Count(r => r.IsEnabled);
+            if (activeRules == 0)
+            {
+                StatusText = "Nenhuma regra ativa — crie uma regra na aba Regras";
+                return;
+            }
+
             await _monitoring.StartAsync(Profile).ConfigureAwait(true);
             IsMonitoring = true;
             IsPaused     = false;
-            StatusText   = $"Monitorando {Profile.Regions.Count(r => r.IsEnabled)} regiões…";
+            StatusText   = $"Monitorando {Profile.Regions.Count(r => r.IsEnabled)} regiões, {activeRules} regras…";
+            OnPropertyChanged(nameof(Profile));
             Title        = $"Screen Action Trigger — {Profile.Name} ▶";
             _ = SaveAutoSaveAsync();
         }

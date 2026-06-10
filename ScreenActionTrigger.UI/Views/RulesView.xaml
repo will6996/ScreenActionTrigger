@@ -293,8 +293,15 @@
                         <TextBlock Text="Cores adicionais (qualquer uma satisfaz)"
                                    Style="{StaticResource LabelStyle}"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBox Width="100" Margin="0,0,6,0"
+                            <TextBox Width="90" Margin="0,0,4,0"
                                      Text="{Binding NewExtraColor, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Border Width="22" Height="22" Margin="0,0,4,0" CornerRadius="3"
+                                    Background="{Binding NewExtraColor,
+                                        Converter={StaticResource ColorPreviewConverter}}"/>
+                            <Button Content="🎯" Width="32" Margin="0,0,4,0"
+                                    Style="{StaticResource BaseButtonStyle}"
+                                    ToolTip="Capturar cor da tela"
+                                    Command="{Binding PickExtraColorFromScreenCommand}"/>
                             <Button Content="+ Adicionar" Style="{StaticResource BaseButtonStyle}"
                                     Command="{Binding AddExtraTargetColorCommand}"/>
                         </StackPanel>
@@ -333,16 +340,31 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <TextBlock Text="Mínimo de pixels (%)"
-                                   Style="{StaticResource LabelStyle}"/>
-                        <StackPanel Orientation="Horizontal">
-                            <Slider Width="200" Minimum="0" Maximum="1"
-                                    Value="{Binding SelectedRule.Condition.MinColorPercentage}"
-                                    TickFrequency="0.05" IsSnapToTickEnabled="True"/>
-                            <TextBlock VerticalAlignment="Center" Margin="8,0,0,0"
-                                       Text="{Binding SelectedRule.Condition.MinColorPercentage,
-                                            StringFormat=P0}"/>
-                        </StackPanel>
+                        <UniformGrid Columns="2" Margin="0,0,0,8">
+                            <StackPanel Margin="0,0,6,0">
+                                <TextBlock Text="Mínimo de pixels (%)"
+                                           Style="{StaticResource LabelStyle}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Slider Width="120" Minimum="0" Maximum="1"
+                                            Value="{Binding SelectedRule.Condition.MinColorPercentage}"
+                                            IsSnapToTickEnabled="True" TickFrequency="0.01"/>
+                                    <TextBlock Margin="8,0,0,0" VerticalAlignment="Center"
+                                               Text="{Binding SelectedRule.Condition.MinColorPercentage,
+                                                   StringFormat=P0}"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="Pixels mínimos (ícones pequenos)"
+                                           Style="{StaticResource LabelStyle}"
+                                           ToolTip="Se &gt; 0, ignora o % e dispara ao encontrar N pixels da cor"/>
+                                <TextBox Text="{Binding SelectedRule.Condition.MinMatchingPixels,
+                                             UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip="Ex: 10 para baús/ícones pequenos. 0 = usar % acima."/>
+                            </StackPanel>
+                        </UniformGrid>
+                        <TextBlock Text="Dica: para baús ou ícones pequenos, use Pixels mínimos = 10–50 e reduza o %."
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="10" TextWrapping="Wrap" Margin="0,0,0,8"/>
                     </StackPanel>
 
                     <!-- Change Detection -->

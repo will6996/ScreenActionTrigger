@@ -63,9 +63,10 @@ public sealed class RuleEngine : IRuleEngine
 
                 DetectionCompleted?.Invoke(this, new DetectionEventArgs
                 {
-                    Detection = result,
-                    Region = region,
-                    MatchedRule = result.IsMatch ? rule : null
+                    Detection     = result,
+                    Region        = region,
+                    EvaluatedRule = rule,
+                    MatchedRule   = result.IsMatch ? rule : null
                 });
 
                 if (result.IsMatch)

@@ -49,19 +49,11 @@ public sealed partial class RulesViewModel : ObservableObject
         Rules.Clear();
         foreach (var r in profile.Rules)
         {
-            EnsureObservableColors(r.Condition);
+            ProfileRepair.EnsureRuleCollections(r);
             Rules.Add(r);
         }
         OnPropertyChanged(nameof(AvailableRegions));
         OnPropertyChanged(nameof(AvailableTemplates));
-    }
-
-    private static void EnsureObservableColors(RuleCondition condition)
-    {
-        if (condition.TargetColors is ObservableCollection<string>)
-            return;
-
-        condition.TargetColors = new ObservableCollection<string>(condition.TargetColors);
     }
 
     [RelayCommand]
@@ -72,7 +64,12 @@ public sealed partial class RulesViewModel : ObservableObject
         {
             Name      = $"Regra {Rules.Count + 1}",
             RegionId  = region?.Id ?? Guid.Empty,
-            Condition = new RuleCondition { Type = ConditionType.ColorDetection }
+            Condition = new RuleCondition
+            {
+                Type               = ConditionType.ColorDetection,
+                MinMatchingPixels  = 10,
+                MinColorPercentage = 0.05
+            }
         };
         Rules.Add(rule);
         SelectedRule = rule;
@@ -142,6 +139,18 @@ public sealed partial class RulesViewModel : ObservableObject
     {
         if (SelectedRule is null) return;
         ColorPickRequested?.Invoke(this, SelectedRule.Condition);
+    }
+
+    [RelayCommand]
+    private void PickExtraColorFromScreen()
+    {
+        ExtraColorPickRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void ApplyPickedExtraColor(string hex)
+    {
+        NewExtraColor = hex;
+        OnPropertyChanged(nameof(NewExtraColor));
     }
 
     [RelayCommand]
@@ -221,6 +230,7 @@ public sealed partial class RulesViewModel : ObservableObject
     }
 
     public event EventHandler<RuleCondition>? ColorPickRequested;
+    public event EventHandler? ExtraColorPickRequested;
     public event EventHandler<TriggerAction>? PathRecordingRequested;
 
     public IEnumerable<VisualRule> FilteredRules =>

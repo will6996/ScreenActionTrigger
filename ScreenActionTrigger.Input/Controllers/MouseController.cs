@@ -16,9 +16,9 @@ public sealed class MouseController
         if (delayMs > 0) await Task.Delay(delayMs);
         MoveTo(x, y);
         await Task.Delay(30);
-        SendMouseEvent(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_ABSOLUTE, x, y);
+        SendMouseButton(MOUSEEVENTF_LEFTDOWN);
         await Task.Delay(30);
-        SendMouseEvent(MOUSEEVENTF_LEFTUP   | MOUSEEVENTF_ABSOLUTE, x, y);
+        SendMouseButton(MOUSEEVENTF_LEFTUP);
     }
 
     public async Task ClickRightAsync(int x, int y, int delayMs = 0)
@@ -26,9 +26,9 @@ public sealed class MouseController
         if (delayMs > 0) await Task.Delay(delayMs);
         MoveTo(x, y);
         await Task.Delay(30);
-        SendMouseEvent(MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_ABSOLUTE, x, y);
+        SendMouseButton(MOUSEEVENTF_RIGHTDOWN);
         await Task.Delay(30);
-        SendMouseEvent(MOUSEEVENTF_RIGHTUP   | MOUSEEVENTF_ABSOLUTE, x, y);
+        SendMouseButton(MOUSEEVENTF_RIGHTUP);
     }
 
     public async Task DoubleClickAsync(int x, int y, int delayMs = 0)
@@ -113,6 +113,19 @@ public sealed class MouseController
     private static void MoveTo(int x, int y)
     {
         SetCursorPos(x, y);
+    }
+
+    private static void SendMouseButton(uint flags)
+    {
+        var inputs = new INPUT[]
+        {
+            new()
+            {
+                type = INPUT_MOUSE,
+                u = new InputUnion { mi = new MOUSEINPUT { dwFlags = flags } }
+            }
+        };
+        SendInput(1, inputs, Marshal.SizeOf<INPUT>());
     }
 
     private static void SendMouseEvent(uint flags, int x, int y, uint data = 0)

@@ -77,7 +77,9 @@ public sealed class ColorDetector
             }
 
             double percentage = (double)matchCount / totalPixels;
-            bool isMatch = percentage >= condition.MinColorPercentage;
+            bool isMatch = condition.MinMatchingPixels > 0
+                ? matchCount >= condition.MinMatchingPixels
+                : percentage >= condition.MinColorPercentage;
 
             Point? screenLoc = null;
             if (isMatch && matchCount > 0)

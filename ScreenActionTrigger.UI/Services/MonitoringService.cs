@@ -170,8 +170,26 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
 
     private void OnDetectionCompleted(object? sender, Core.Interfaces.DetectionEventArgs e)
     {
-        if (!e.Detection.IsMatch) return;
-        _overlay.ShowDetection(e.Detection, e.Region);
+        if (e.Detection.IsMatch)
+        {
+            _overlay.ShowDetection(e.Detection, e.Region);
+            return;
+        }
+
+        if (_profile?.Settings.LogDetections == true
+            && e.Detection.Confidence > 0
+            && e.EvaluatedRule is not null)
+        {
+            AddEntry(new MonitoringEntry
+            {
+                RegionName    = e.Region.Name,
+                RuleName      = e.EvaluatedRule.Name,
+                Confidence    = e.Detection.Confidence,
+                DetectionType = e.Detection.DetectionType.ToString(),
+                WasExecuted   = false,
+                ActionName    = "Sem match (ajuste % ou pixels mínimos)"
+            });
+        }
     }
 
     private void OnActionExecuted(object? sender, Core.Interfaces.ActionExecutedEventArgs e)

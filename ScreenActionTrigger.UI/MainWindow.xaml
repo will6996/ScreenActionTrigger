@@ -208,9 +208,9 @@
                            FontSize="10" VerticalAlignment="Center">
                     <TextBlock.Text>
                         <MultiBinding StringFormat="{}{0} regiões  •  {1} regras  •  {2} templates">
-                            <Binding Path="Profile.Regions.Count"/>
-                            <Binding Path="Profile.Rules.Count"/>
-                            <Binding Path="Profile.Templates.Count"/>
+                            <Binding Path="RegionsVM.Regions.Count"/>
+                            <Binding Path="RulesVM.Rules.Count"/>
+                            <Binding Path="TemplatesVM.Templates.Count"/>
                         </MultiBinding>
                     </TextBlock.Text>
                 </TextBlock>
