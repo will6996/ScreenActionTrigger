@@ -1,8 +1,8 @@
 {
-  "version":      "1.1.0",
-  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.0/ScreenActionTrigger.UI.exe",
-  "releaseNotes": "- Regiões aparecem em tempo real na aba Regras\n- Cores rápidas, conta-gotas e múltiplas cores alvo\n- Gravação de caminho do mouse (macro)\n- ComboBox e condições legíveis em português\n- Correções de compilação e publicação",
+  "version":      "1.1.1",
+  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.1/ScreenActionTrigger.UI.exe",
+  "releaseNotes": "- Corrige verificação de atualizações (repositório público + fallback GitHub Releases)",
   "mandatory":    false,
-  "fileSize":     113079011,
-  "releasedAt":   "2026-06-09T20:00:00Z"
+  "fileSize":     113082955,
+  "releasedAt":   "2026-06-10T03:00:00Z"
 }

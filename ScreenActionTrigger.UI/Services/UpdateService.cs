@@ -21,6 +21,9 @@ public sealed class UpdateService : IUpdateService, IDisposable
     public static string VersionManifestUrl { get; set; } =
         "https://raw.githubusercontent.com/will6996/ScreenActionTrigger/main/version.json";
 
+    public static string GitHubOwner { get; set; } = "will6996";
+    public static string GitHubRepo   { get; set; } = "ScreenActionTrigger";
+
     public Version CurrentVersion { get; } =
         Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
 
@@ -31,8 +34,18 @@ public sealed class UpdateService : IUpdateService, IDisposable
         _http.DefaultRequestHeaders.Add("User-Agent", "ScreenActionTrigger-Updater/1.0");
     }
 
-    // ─── Verificar via version.json ───────────────────────────────────────────
+    // ─── Verificar: version.json → fallback GitHub Releases API ───────────────
     public async Task<UpdateInfo?> CheckAsync(CancellationToken ct = default)
+    {
+        var fromManifest = await TryCheckManifestAsync(ct);
+        if (fromManifest is not null)
+            return fromManifest;
+
+        _logger.LogInformation("version.json indisponível — tentando GitHub Releases API");
+        return await CheckViaGitHubAsync(GitHubOwner, GitHubRepo, ct);
+    }
+
+    private async Task<UpdateInfo?> TryCheckManifestAsync(CancellationToken ct)
     {
         try
         {
@@ -42,7 +55,8 @@ public sealed class UpdateService : IUpdateService, IDisposable
             var manifest = JsonSerializer.Deserialize<RemoteVersionManifest>(json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-            if (manifest is null) return null;
+            if (manifest is null || string.IsNullOrWhiteSpace(manifest.Version))
+                return null;
 
             var latest = Version.Parse(manifest.Version);
             var info   = new UpdateInfo
@@ -64,7 +78,7 @@ public sealed class UpdateService : IUpdateService, IDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Falha ao verificar atualizações");
+            _logger.LogWarning(ex, "Falha ao ler version.json");
             return null;
         }
     }
@@ -75,8 +89,12 @@ public sealed class UpdateService : IUpdateService, IDisposable
     {
         try
         {
-            var url      = $"https://api.github.com/repos/{owner}/{repo}/releases/latest";
-            var json     = await _http.GetStringAsync(url, ct);
+            var url  = $"https://api.github.com/repos/{owner}/{repo}/releases/latest";
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Accept.ParseAdd("application/vnd.github+json");
+            using var response = await _http.SendAsync(request, ct);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync(ct);
             using var doc = JsonDocument.Parse(json);
             var root      = doc.RootElement;
 
