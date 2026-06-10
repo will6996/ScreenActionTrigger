@@ -80,6 +80,7 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
             _cts = null;
         }
 
+        _dispatcher.CancelAll();
         _overlay.Hide();
         _ruleEngine.ResetAll();
         _vision.ClearAllCaches();
@@ -148,12 +149,9 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
 
     private void OnRuleTriggered(object? sender, Core.Interfaces.RuleTriggeredEventArgs e)
     {
-        // Dispatch all actions for the triggered rule
-        Task.Run(async () =>
-        {
-            foreach (var action in e.Rule.Actions)
-                await _dispatcher.EnqueueAsync(action, e.Rule.Priority, e.Detection);
-        });
+        if (e.Rule.Actions.Count == 0) return;
+
+        _ = _dispatcher.EnqueueBatchAsync(e.Rule.Actions, e.Rule.Priority, e.Detection);
 
         _overlay.ShowRuleTriggered(e.Rule, e.Detection);
 

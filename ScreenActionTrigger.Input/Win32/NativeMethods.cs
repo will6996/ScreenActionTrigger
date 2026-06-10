@@ -22,8 +22,12 @@ internal static class NativeMethods
     [DllImport("kernel32.dll")]
     internal static extern bool Beep(uint dwFreq, uint dwDuration);
 
-    internal const int SM_CXSCREEN = 0;
-    internal const int SM_CYSCREEN = 1;
+    internal const int SM_CXSCREEN        = 0;
+    internal const int SM_CYSCREEN        = 1;
+    internal const int SM_XVIRTUALSCREEN  = 76;
+    internal const int SM_YVIRTUALSCREEN  = 77;
+    internal const int SM_CXVIRTUALSCREEN = 78;
+    internal const int SM_CYVIRTUALSCREEN = 79;
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct INPUT
@@ -90,6 +94,7 @@ internal static class NativeMethods
     internal const uint MOUSEEVENTF_MIDDLEUP    = 0x0040;
     internal const uint MOUSEEVENTF_WHEEL       = 0x0800;
     internal const uint MOUSEEVENTF_ABSOLUTE    = 0x8000;
+    internal const uint MOUSEEVENTF_VIRTUALDESK = 0x4000;
 
     // Keyboard flags
     internal const uint KEYEVENTF_KEYUP       = 0x0002;
@@ -104,9 +109,20 @@ internal static class NativeMethods
 
     internal const int WHEEL_DELTA = 120;
 
-    internal static int ScreenWidth  => GetSystemMetrics(SM_CXSCREEN);
-    internal static int ScreenHeight => GetSystemMetrics(SM_CYSCREEN);
+    internal static int VirtualScreenLeft   => GetSystemMetrics(SM_XVIRTUALSCREEN);
+    internal static int VirtualScreenTop    => GetSystemMetrics(SM_YVIRTUALSCREEN);
+    internal static int VirtualScreenWidth  => GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    internal static int VirtualScreenHeight => GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
-    internal static int ToAbsoluteX(int x) => (int)((double)x / ScreenWidth  * 65535 + 0.5);
-    internal static int ToAbsoluteY(int y) => (int)((double)y / ScreenHeight * 65535 + 0.5);
+    internal static int ToAbsoluteX(int x)
+    {
+        var w = Math.Max(VirtualScreenWidth - 1, 1);
+        return (int)((double)(x - VirtualScreenLeft) / w * 65535 + 0.5);
+    }
+
+    internal static int ToAbsoluteY(int y)
+    {
+        var h = Math.Max(VirtualScreenHeight - 1, 1);
+        return (int)((double)(y - VirtualScreenTop) / h * 65535 + 0.5);
+    }
 }

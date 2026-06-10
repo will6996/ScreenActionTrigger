@@ -10,7 +10,7 @@ public sealed class VisualRule
     public RuleCondition Condition { get; set; } = new();
     public ObservableCollection<TriggerAction> Actions { get; set; } = new();
     public int Priority { get; set; } = 0;
-    public int CooldownMs { get; set; } = 500;
+    public int CooldownMs { get; set; } = 200;
     public bool IsEnabled { get; set; } = true;
     public int MaxExecutions { get; set; } = -1;  // -1 = unlimited
     public int ExecutionCount { get; set; } = 0;

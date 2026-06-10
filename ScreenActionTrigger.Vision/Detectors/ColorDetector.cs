@@ -35,9 +35,11 @@ public sealed class ColorDetector
             var rect = new Rectangle(0, 0, bmp.Width, bmp.Height);
             var bmpData = bmp.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 
-            int totalPixels = bmp.Width * bmp.Height;
-            int matchCount  = 0;
+            int totalPixels   = bmp.Width * bmp.Height;
+            int matchCount    = 0;
+            int contentPixels = 0;
             long sumX = 0, sumY = 0;
+            var darkThreshold = condition.DarkPixelThreshold;
 
             try
             {
@@ -58,10 +60,12 @@ public sealed class ColorDetector
                             byte g = row[i + 1];
                             byte r = row[i + 2];
 
-                            if (targets.Any(t =>
-                                    Math.Abs(r - t.R) <= condition.ColorTolerance &&
-                                    Math.Abs(g - t.G) <= condition.ColorTolerance &&
-                                    Math.Abs(b - t.B) <= condition.ColorTolerance))
+                            if (condition.ExcludeDarkPixels && IsDarkPixel(r, g, b, darkThreshold))
+                                continue;
+
+                            contentPixels++;
+
+                            if (targets.Any(t => ColorMatches(r, g, b, t, condition.ColorTolerance)))
                             {
                                 matchCount++;
                                 sumX += x;
@@ -76,10 +80,16 @@ public sealed class ColorDetector
                 bmp.UnlockBits(bmpData);
             }
 
-            double percentage = (double)matchCount / totalPixels;
+            var denominator = condition.ExcludeDarkPixels
+                ? Math.Max(contentPixels, 1)
+                : totalPixels;
+
+            double rawPercentage      = (double)matchCount / Math.Max(totalPixels, 1);
+            double adjustedPercentage = (double)matchCount / denominator;
+
             bool isMatch = condition.MinMatchingPixels > 0
                 ? matchCount >= condition.MinMatchingPixels
-                : percentage >= condition.MinColorPercentage;
+                : adjustedPercentage >= condition.MinColorPercentage;
 
             Point? screenLoc = null;
             if (isMatch && matchCount > 0)
@@ -91,14 +101,15 @@ public sealed class ColorDetector
 
             return new DetectionResult
             {
-                RegionId      = region.Id,
-                IsMatch       = isMatch,
-                Confidence    = percentage,
-                DetectionType = ConditionType.ColorDetection,
-                MatchLocation = screenLoc,
-                MatchSize     = isMatch ? new Size(1, 1) : null,
-                RegionBounds  = region.Bounds,
-                Timestamp     = DateTime.UtcNow
+                RegionId        = region.Id,
+                IsMatch         = isMatch,
+                Confidence      = adjustedPercentage,
+                MatchPixelCount = matchCount,
+                DetectionType   = ConditionType.ColorDetection,
+                MatchLocation   = screenLoc,
+                MatchSize       = isMatch ? new Size(1, 1) : null,
+                RegionBounds    = region.Bounds,
+                Timestamp       = DateTime.UtcNow
             };
         }
         catch (Exception ex)
@@ -107,6 +118,66 @@ public sealed class ColorDetector
             return DetectionResult.NoMatch(region.Id, ConditionType.ColorDetection);
         }
     }
+
+    /// <summary>Retorna as cores mais frequentes (não escuras) de um frame, em #RRGGBB.</summary>
+    public static IReadOnlyList<string> FindTopColors(byte[] frameData, int count = 3, int darkThreshold = 35)
+    {
+        using var ms  = new MemoryStream(frameData);
+        using var raw = new Bitmap(ms);
+        using var bmp = Ensure32bpp(raw);
+
+        var colorCounts = new Dictionary<int, int>();
+        var bmpData = bmp.LockBits(
+            new Rectangle(0, 0, bmp.Width, bmp.Height),
+            ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+
+        try
+        {
+            unsafe
+            {
+                byte* ptr = (byte*)bmpData.Scan0;
+                int total = bmp.Width * bmp.Height;
+                for (int i = 0; i < total; i++)
+                {
+                    byte b = ptr[i * 4];
+                    byte g = ptr[i * 4 + 1];
+                    byte r = ptr[i * 4 + 2];
+
+                    if (IsDarkPixel(r, g, b, darkThreshold))
+                        continue;
+
+                    // Quantiza para agrupar tons parecidos (passo de 8)
+                    int rq = (r >> 3) << 3;
+                    int gq = (g >> 3) << 3;
+                    int bq = (b >> 3) << 3;
+                    int key = (rq << 16) | (gq << 8) | bq;
+                    colorCounts.TryGetValue(key, out int cnt);
+                    colorCounts[key] = cnt + 1;
+                }
+            }
+        }
+        finally
+        {
+            bmp.UnlockBits(bmpData);
+        }
+
+        return colorCounts
+            .OrderByDescending(kv => kv.Value)
+            .Take(count)
+            .Select(kv => $"#{(kv.Key >> 16) & 0xFF:X2}{(kv.Key >> 8) & 0xFF:X2}{kv.Key & 0xFF:X2}")
+            .ToList();
+    }
+
+    internal static bool ColorMatches(byte r, byte g, byte b, Color target, int tolerance)
+    {
+        int dr = Math.Abs(r - target.R);
+        int dg = Math.Abs(g - target.G);
+        int db = Math.Abs(b - target.B);
+        return Math.Max(dr, Math.Max(dg, db)) <= tolerance;
+    }
+
+    internal static bool IsDarkPixel(byte r, byte g, byte b, int threshold)
+        => r + g + b < threshold;
 
     private static Color? TryParseColor(string hex)
     {
@@ -130,40 +201,8 @@ public sealed class ColorDetector
 
     public static Color FindDominantColor(byte[] frameData)
     {
-        using var ms  = new MemoryStream(frameData);
-        using var raw = new Bitmap(ms);
-        using var bmp = Ensure32bpp(raw);
-
-        var colorCounts = new Dictionary<int, int>();
-        var bmpData = bmp.LockBits(
-            new Rectangle(0, 0, bmp.Width, bmp.Height),
-            ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-
-        try
-        {
-            unsafe
-            {
-                byte* ptr = (byte*)bmpData.Scan0;
-                int total = bmp.Width * bmp.Height;
-                for (int i = 0; i < total; i++)
-                {
-                    int r = (ptr[i * 4 + 2] >> 5) << 5;
-                    int g = (ptr[i * 4 + 1] >> 5) << 5;
-                    int b = (ptr[i * 4    ] >> 5) << 5;
-                    int key = (r << 16) | (g << 8) | b;
-                    colorCounts.TryGetValue(key, out int cnt);
-                    colorCounts[key] = cnt + 1;
-                }
-            }
-        }
-        finally
-        {
-            bmp.UnlockBits(bmpData);
-        }
-
-        if (colorCounts.Count == 0) return Color.Black;
-        var dominant = colorCounts.OrderByDescending(kv => kv.Value).First().Key;
-        return Color.FromArgb((dominant >> 16) & 0xFF, (dominant >> 8) & 0xFF, dominant & 0xFF);
+        var top = FindTopColors(frameData, 1);
+        if (top.Count == 0) return Color.Black;
+        return ColorTranslator.FromHtml(top[0]);
     }
-
 }

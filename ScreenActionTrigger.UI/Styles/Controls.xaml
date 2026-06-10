@@ -217,11 +217,26 @@
         <Setter Property="FontWeight" Value="Bold"/>
     </Style>
 
-    <!-- Separator -->
-    <Style TargetType="Separator">
+    <!-- Separator em painéis (não usar em ContextMenu — ver DarkContextMenuSeparatorStyle) -->
+    <Style x:Key="PanelSeparatorStyle" TargetType="Separator">
         <Setter Property="Background" Value="{StaticResource BgBorderBrush}"/>
         <Setter Property="Height"     Value="1"/>
         <Setter Property="Margin"     Value="0,6"/>
+    </Style>
+
+    <Style x:Key="DarkContextMenuSeparatorStyle" TargetType="Separator">
+        <Setter Property="Background"  Value="{StaticResource BgBorderBrush}"/>
+        <Setter Property="Height"      Value="1"/>
+        <Setter Property="Margin"      Value="4,4"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Separator">
+                    <Border Height="1"
+                            Background="{TemplateBinding Background}"
+                            SnapsToDevicePixels="True"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ListView / ListBox -->
@@ -319,31 +334,25 @@
         <Setter Property="Background" Value="{StaticResource BgBorderBrush}"/>
     </Style>
 
-    <!-- Context menu (tema escuro) -->
-    <Style TargetType="ContextMenu">
-        <Setter Property="Background"  Value="{StaticResource BgCardBrush}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource BgBorderBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Foreground"  Value="{StaticResource TextPrimaryBrush}"/>
-        <Setter Property="Padding"     Value="4"/>
-    </Style>
-
-    <Style TargetType="MenuItem">
+    <!-- Context menu (tema escuro) — estilos nomeados, não globais -->
+    <Style x:Key="DarkContextMenuItemStyle" TargetType="MenuItem">
         <Setter Property="Background"  Value="Transparent"/>
         <Setter Property="Foreground"  Value="{StaticResource TextPrimaryBrush}"/>
-        <Setter Property="Padding"     Value="12,7"/>
+        <Setter Property="Padding"     Value="14,8"/>
         <Setter Property="FontSize"    Value="12"/>
+        <Setter Property="Icon"        Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="MenuItem">
                     <Border x:Name="Bd"
                             Background="{TemplateBinding Background}"
                             BorderThickness="0"
-                            Padding="{TemplateBinding Padding}">
-                        <ContentPresenter x:Name="HeaderHost"
-                                          ContentSource="Header"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter Content="{TemplateBinding Header}"
                                           RecognizesAccessKey="True"
                                           VerticalAlignment="Center"
+                                          HorizontalAlignment="Left"
                                           TextElement.Foreground="{TemplateBinding Foreground}"/>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -358,6 +367,14 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style x:Key="DarkContextMenuStyle" TargetType="ContextMenu">
+        <Setter Property="Background"  Value="{StaticResource BgCardBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BgBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Foreground"  Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="Padding"     Value="2"/>
     </Style>
 
     <!-- ToolTip -->

@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Interop;
 using Microsoft.Extensions.Logging;
 using ScreenActionTrigger.UI.Infrastructure;
@@ -6,13 +7,10 @@ using ScreenActionTrigger.UI.Infrastructure;
 namespace ScreenActionTrigger.UI.Services;
 
 /// <summary>
-/// Registra atalhos globais via RegisterHotKey numa janela oculta (HWND_MESSAGE),
-/// independente da janela principal do app.
+/// Registra atalhos globais via RegisterHotKey na janela principal do app.
 /// </summary>
 public sealed class GlobalHotkeyService : IDisposable
 {
-    private static readonly IntPtr HwndMessage = new(-3);
-
     private const int WmHotkey    = 0x0312;
     private const int IdStartStop = 1;
     private const int IdPause     = 2;
@@ -20,7 +18,7 @@ public sealed class GlobalHotkeyService : IDisposable
 
     private readonly ILogger<GlobalHotkeyService> _logger;
 
-    private HwndSource? _messageSource;
+    private HwndSource? _hwndSource;
     private IntPtr      _hwnd;
     private string      _startStop = "F9";
     private string      _pause     = "F10";
@@ -37,29 +35,47 @@ public sealed class GlobalHotkeyService : IDisposable
 
     public GlobalHotkeyService(ILogger<GlobalHotkeyService> logger) => _logger = logger;
 
-    public void Initialize()
+    public void AttachToWindow(Window window)
     {
-        if (_initialized)
+        if (window.IsLoaded)
+            AttachToHwnd(new WindowInteropHelper(window).Handle);
+        else
+            window.SourceInitialized += OnSourceInitialized;
+    }
+
+    private void OnSourceInitialized(object? sender, EventArgs e)
+    {
+        if (sender is not Window window) return;
+        window.SourceInitialized -= OnSourceInitialized;
+        AttachToHwnd(new WindowInteropHelper(window).Handle);
+    }
+
+    private void AttachToHwnd(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero)
             return;
 
-        var parameters = new HwndSourceParameters("ScreenActionTrigger.Hotkeys")
+        if (_hwndSource is not null && _hwnd != hwnd)
         {
-            Width               = 0,
-            Height              = 0,
-            PositionX           = 0,
-            PositionY           = 0,
-            WindowStyle         = 0,
-            ExtendedWindowStyle = 0,
-            ParentWindow        = HwndMessage,
-            UsesPerPixelOpacity = false
-        };
+            _hwndSource.RemoveHook(WndProc);
+            UnregisterAll();
+            _hwndSource = null;
+        }
 
-        _messageSource = new HwndSource(parameters);
-        _messageSource.AddHook(WndProc);
-        _hwnd = _messageSource.Handle;
+        if (_hwndSource is null)
+        {
+            _hwndSource = HwndSource.FromHwnd(hwnd);
+            if (_hwndSource is null)
+            {
+                _logger.LogWarning("HwndSource indisponível para HWND={Hwnd}", hwnd);
+                return;
+            }
+            _hwndSource.AddHook(WndProc);
+        }
+
+        _hwnd        = hwnd;
         _initialized = true;
-
-        _logger.LogDebug("Janela de atalhos criada (HWND={Hwnd})", _hwnd);
+        _logger.LogDebug("Atalhos ligados à janela principal (HWND={Hwnd})", _hwnd);
         RegisterAll();
     }
 
@@ -153,11 +169,13 @@ public sealed class GlobalHotkeyService : IDisposable
     public void Dispose()
     {
         UnregisterAll();
-        _messageSource?.RemoveHook(WndProc);
-        _messageSource?.Dispose();
-        _messageSource = null;
-        _hwnd          = IntPtr.Zero;
-        _initialized   = false;
+        if (_hwndSource is not null)
+        {
+            _hwndSource.RemoveHook(WndProc);
+            _hwndSource = null;
+        }
+        _hwnd        = IntPtr.Zero;
+        _initialized = false;
     }
 
     [DllImport("user32.dll", SetLastError = true)]

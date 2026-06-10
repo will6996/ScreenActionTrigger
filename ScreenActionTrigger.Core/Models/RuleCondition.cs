@@ -13,10 +13,14 @@ public sealed class RuleCondition
     public string TargetColor { get; set; } = "#0000FF";
     /// <summary>Cores adicionais alvo (qualquer uma satisfaz a condição).</summary>
     public ObservableCollection<string> TargetColors { get; set; } = new();
-    public int ColorTolerance { get; set; } = 15;
-    public double MinColorPercentage { get; set; } = 0.30;
+    public int ColorTolerance { get; set; } = 28;
+    public double MinColorPercentage { get; set; } = 0.03;
     /// <summary>Se &gt; 0, dispara quando houver pelo menos N pixels da cor (ideal para ícones pequenos).</summary>
-    public int MinMatchingPixels { get; set; } = 0;
+    public int MinMatchingPixels { get; set; } = 8;
+    /// <summary>Ignora pixels escuros (fundo do inventário) no cálculo do %.</summary>
+    public bool ExcludeDarkPixels { get; set; } = true;
+    /// <summary>Soma R+G+B abaixo disso é considerado fundo escuro.</summary>
+    public int DarkPixelThreshold { get; set; } = 35;
     public bool UseDominantColor { get; set; } = false;
 
     // Change detection

@@ -10,7 +10,7 @@
     <RootNamespace>ScreenActionTrigger.UI</RootNamespace>
     <AssemblyTitle>Screen Action Trigger</AssemblyTitle>
     <Product>Screen Action Trigger</Product>
-    <Version>1.1.13</Version>
+    <Version>1.1.17</Version>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 

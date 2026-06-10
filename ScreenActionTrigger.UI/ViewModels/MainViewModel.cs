@@ -114,11 +114,11 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    [RelayCommand(CanExecute = nameof(CanRunMonitoringCommand))]
+    [RelayCommand(CanExecute = nameof(CanStopMonitoring))]
     private async Task StopMonitoringAsync()
     {
-        if (IsBusy) return;
-        IsBusy = true;
+        if (!IsMonitoring) return;
+
         try
         {
             await _monitoring.StopAsync().ConfigureAwait(true);
@@ -127,9 +127,10 @@ public sealed partial class MainViewModel : ObservableObject
             StatusText   = "Monitoramento parado";
             Title        = $"Screen Action Trigger — {Profile.Name}";
         }
-        finally
+        catch (Exception ex)
         {
-            IsBusy = false;
+            _logger.LogError(ex, "Failed to stop monitoring");
+            StatusText = $"Erro ao parar: {ex.Message}";
         }
     }
 
@@ -142,13 +143,30 @@ public sealed partial class MainViewModel : ObservableObject
             await StartMonitoringAsync();
     }
 
+    /// <summary>Atalho global — sempre permite parar, mesmo com IsBusy.</summary>
+    [RelayCommand]
+    private async Task HotkeyToggleMonitoringAsync()
+    {
+        if (IsMonitoring)
+            await StopMonitoringAsync();
+        else if (!IsBusy)
+            await StartMonitoringAsync();
+    }
+
     private bool CanRunMonitoringCommand() => !IsBusy;
+    private bool CanStopMonitoring() => IsMonitoring;
 
     partial void OnIsBusyChanged(bool value)
     {
         StartMonitoringCommand.NotifyCanExecuteChanged();
         StopMonitoringCommand.NotifyCanExecuteChanged();
         ToggleMonitoringCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnIsMonitoringChanged(bool value)
+    {
+        StopMonitoringCommand.NotifyCanExecuteChanged();
+        TogglePauseCommand.NotifyCanExecuteChanged();
     }
 
     [RelayCommand(CanExecute = nameof(CanTogglePause))]
@@ -169,8 +187,6 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     private bool CanTogglePause() => IsMonitoring;
-
-    partial void OnIsMonitoringChanged(bool value) => TogglePauseCommand.NotifyCanExecuteChanged();
 
     [RelayCommand]
     private async Task NewProfileAsync()

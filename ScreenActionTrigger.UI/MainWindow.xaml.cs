@@ -27,6 +27,8 @@ public partial class MainWindow : Window
         ViewModel.SettingsVM.PropertyChanged += OnSettingsChanged;
         Loaded  += OnWindowLoaded;
         Closing += OnClosing;
+
+        _hotkeys.AttachToWindow(this);
     }
 
     private async void OnWindowLoaded(object sender, RoutedEventArgs e)
@@ -63,7 +65,6 @@ public partial class MainWindow : Window
 
     private void RefreshHotkeys()
     {
-        _hotkeys.Initialize();
         _hotkeys.SetHotkeys(
             ViewModel.SettingsVM.HotkeyStartStop,
             ViewModel.SettingsVM.HotkeyPause);
@@ -106,12 +107,15 @@ public partial class MainWindow : Window
         });
     }
 
-    private Task OnStartStopHotkey() => ViewModel.ToggleMonitoringCommand.ExecuteAsync(null);
+    private Task OnStartStopHotkey() => ViewModel.HotkeyToggleMonitoringCommand.ExecuteAsync(null);
 
     private Task OnPauseHotkey()
     {
         if (!ViewModel.IsMonitoring)
+        {
+            ViewModel.StatusText = "Inicie o monitoramento antes de pausar (F9)";
             return Task.CompletedTask;
+        }
 
         return ViewModel.TogglePauseCommand.ExecuteAsync(null);
     }
@@ -120,6 +124,12 @@ public partial class MainWindow : Window
     {
         if (e.LeftButton == MouseButtonState.Pressed)
             DragMove();
+    }
+
+    private void TitleBar_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        // Evita menu do sistema do Windows (Mover/Fechar) na barra de título customizada
+        e.Handled = true;
     }
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e)
@@ -135,19 +145,18 @@ public partial class MainWindow : Window
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        // F9/F10 global já tratados pelo RegisterHotKey — aqui só repassa quando foco está em TextBox
-        if (e.Handled || e.OriginalSource is not System.Windows.Controls.TextBox)
+        if (e.Handled)
             return;
 
         if (e.Key == Key.F9)
         {
             e.Handled = true;
-            _ = ViewModel.ToggleMonitoringCommand.ExecuteAsync(null);
+            _ = ViewModel.HotkeyToggleMonitoringCommand.ExecuteAsync(null);
         }
-        else if (e.Key == Key.F10 && ViewModel.IsMonitoring)
+        else if (e.Key == Key.F10)
         {
             e.Handled = true;
-            _ = ViewModel.TogglePauseCommand.ExecuteAsync(null);
+            _ = OnPauseHotkey();
         }
     }
 }

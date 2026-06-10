@@ -1,8 +1,8 @@
 {
-  "version":      "1.1.13",
-  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.13/ScreenActionTrigger.UI.exe",
-  "releaseNotes": "- Corrige crash ao abrir (estilo Separator duplicado)\n- Menu de contexto legível e Remover funcionando",
+  "version":      "1.1.17",
+  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.17/ScreenActionTrigger.UI.exe",
+  "releaseNotes": "- Detecção de cor em inventário (ignora fundo escuro)\n- Botão Amostrar cor da região\n- Ajuste automático de regras antigas com 30%",
   "mandatory":    true,
-  "fileSize": 113157336,
-  "releasedAt":   "2026-06-10T00:00:00Z"
+  "fileSize": 113173687,
+  "releasedAt":   "2026-06-09T00:00:00Z"
 }

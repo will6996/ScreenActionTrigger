@@ -46,7 +46,7 @@ if ($publish -eq "fd") {
 } else {
     $profile = "SingleFile_SelfContained"
     $outDir  = "publish\self-contained"
-    $note    = "Sem dependências externas (inclui runtime .NET 8)"
+    $note    = 'Sem dependencias externas (inclui runtime .NET 8)'
 }
 
 dotnet publish $UI -c Release -p:PublishProfile=$profile --nologo

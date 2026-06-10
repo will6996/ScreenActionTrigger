@@ -7,6 +7,7 @@ public sealed record DetectionResult
     public Guid RegionId { get; set; }
     public bool IsMatch { get; set; }
     public double Confidence { get; set; }
+    public int MatchPixelCount { get; set; }
     public Point? MatchLocation { get; set; }
     public Size? MatchSize { get; set; }
     /// <summary>Região monitorada em coordenadas de tela (fallback do clique).</summary>

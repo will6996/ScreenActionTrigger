@@ -10,6 +10,7 @@ public interface IActionDispatcher
     Task EnqueueAsync(TriggerAction action, int priority = 0, DetectionResult? context = null);
     Task EnqueueBatchAsync(IEnumerable<TriggerAction> actions, int priority = 0, DetectionResult? context = null);
     void CancelAll();
+    void ReleaseAllInputs();
     int QueueLength { get; }
 }
 

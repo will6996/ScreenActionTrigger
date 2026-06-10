@@ -43,16 +43,25 @@ public sealed class ActionDispatcher : IActionDispatcher, IDisposable
             if (action.DelayBeforeMs > 0) await Task.Delay(action.DelayBeforeMs, ct);
 
             var (x, y) = ResolveClickPoint(action, context);
-            _logger.LogDebug("Action {Type} at ({X},{Y})", action.Type, x, y);
-
-            for (int i = 0; i < action.RepeatCount; i++)
+            if (IsMouseAction(action.Type) && !HasValidClickPoint(action, context, x, y))
             {
-                await DispatchAsync(action, x, y, ct);
-                if (i < action.RepeatCount - 1 && action.RepeatDelayMs > 0)
-                    await Task.Delay(action.RepeatDelayMs, ct);
+                error = new InvalidOperationException(
+                    $"Coordenadas inválidas para clique ({x},{y}) — verifique região e detecção");
+                _logger.LogWarning("Ação {Type} ignorada — {Message}", action.Type, error.Message);
             }
+            else
+            {
+                _logger.LogDebug("Action {Type} at ({X},{Y})", action.Type, x, y);
 
-            success = true;
+                for (int i = 0; i < Math.Max(action.RepeatCount, 1); i++)
+                {
+                    await DispatchAsync(action, x, y, ct);
+                    if (i < action.RepeatCount - 1 && action.RepeatDelayMs > 0)
+                        await Task.Delay(action.RepeatDelayMs, ct);
+                }
+
+                success = true;
+            }
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
@@ -135,6 +144,14 @@ public sealed class ActionDispatcher : IActionDispatcher, IDisposable
             QueueLength = 0;
         }
         finally { _queueLock.Release(); }
+
+        ReleaseAllInputs();
+    }
+
+    public void ReleaseAllInputs()
+    {
+        _mouse.ReleaseAllButtons();
+        _keyboard.ReleaseAllModifiers();
     }
 
     private async Task ProcessQueueAsync()
@@ -211,8 +228,25 @@ public sealed class ActionDispatcher : IActionDispatcher, IDisposable
         return (0, 0);
     }
 
+    private static bool IsMouseAction(ActionType type) => type is
+        ActionType.MouseLeftClick or ActionType.MouseRightClick or ActionType.MouseDoubleClick
+        or ActionType.MousePress or ActionType.MouseRelease or ActionType.MouseScroll
+        or ActionType.MouseFollowPath;
+
+    private static bool HasValidClickPoint(TriggerAction action, DetectionResult? context, int x, int y)
+    {
+        if (action.TargetX.HasValue && action.TargetY.HasValue)
+            return true;
+
+        if (!action.UseDetectionCoordinates || context is null)
+            return false;
+
+        return context.MatchLocation is not null || context.RegionBounds is not null;
+    }
+
     public void Dispose()
     {
+        CancelAll();
         _workerCts.Cancel();
         _workerCts.Dispose();
         _queueLock.Dispose();

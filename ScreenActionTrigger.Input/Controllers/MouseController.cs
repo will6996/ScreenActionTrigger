@@ -14,21 +14,13 @@ public sealed class MouseController
     public async Task ClickLeftAsync(int x, int y, int delayMs = 0)
     {
         if (delayMs > 0) await Task.Delay(delayMs);
-        MoveTo(x, y);
-        await Task.Delay(30);
-        SendMouseButton(MOUSEEVENTF_LEFTDOWN);
-        await Task.Delay(30);
-        SendMouseButton(MOUSEEVENTF_LEFTUP);
+        await SendClickAsync(x, y, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP);
     }
 
     public async Task ClickRightAsync(int x, int y, int delayMs = 0)
     {
         if (delayMs > 0) await Task.Delay(delayMs);
-        MoveTo(x, y);
-        await Task.Delay(30);
-        SendMouseButton(MOUSEEVENTF_RIGHTDOWN);
-        await Task.Delay(30);
-        SendMouseButton(MOUSEEVENTF_RIGHTUP);
+        await SendClickAsync(x, y, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP);
     }
 
     public async Task DoubleClickAsync(int x, int y, int delayMs = 0)
@@ -42,25 +34,21 @@ public sealed class MouseController
     {
         MoveTo(x, y);
         await Task.Delay(20);
-        uint flag = btn switch
-        {
-            Core.Models.MouseButton.Right  => MOUSEEVENTF_RIGHTDOWN,
-            Core.Models.MouseButton.Middle => MOUSEEVENTF_MIDDLEDOWN,
-            _                              => MOUSEEVENTF_LEFTDOWN
-        };
-        SendMouseEvent(flag | MOUSEEVENTF_ABSOLUTE, x, y);
+        SendMouseFlag(ButtonDownFlag(btn));
     }
 
     public async Task ReleaseAsync(int x, int y, Core.Models.MouseButton btn)
     {
-        uint flag = btn switch
-        {
-            Core.Models.MouseButton.Right  => MOUSEEVENTF_RIGHTUP,
-            Core.Models.MouseButton.Middle => MOUSEEVENTF_MIDDLEUP,
-            _                              => MOUSEEVENTF_LEFTUP
-        };
-        SendMouseEvent(flag | MOUSEEVENTF_ABSOLUTE, x, y);
-        await Task.CompletedTask;
+        MoveTo(x, y);
+        await Task.Delay(10);
+        SendMouseFlag(ButtonUpFlag(btn));
+    }
+
+    public void ReleaseAllButtons()
+    {
+        SendMouseFlag(MOUSEEVENTF_LEFTUP);
+        SendMouseFlag(MOUSEEVENTF_RIGHTUP);
+        SendMouseFlag(MOUSEEVENTF_MIDDLEUP);
     }
 
     public async Task FollowPathAsync(
@@ -71,22 +59,29 @@ public sealed class MouseController
     {
         if (points.Count == 0) return;
 
-        foreach (var pt in points)
+        try
         {
-            ct.ThrowIfCancellationRequested();
-            if (pt.DelayMs > 0)
-                await Task.Delay(pt.DelayMs, ct);
+            foreach (var pt in points)
+            {
+                ct.ThrowIfCancellationRequested();
+                if (pt.DelayMs > 0)
+                    await Task.Delay(pt.DelayMs, ct);
 
-            MoveTo(pt.X, pt.Y);
+                MoveTo(pt.X, pt.Y);
 
-            if (stepDelayMs > 0)
-                await Task.Delay(stepDelayMs, ct);
+                if (stepDelayMs > 0)
+                    await Task.Delay(stepDelayMs, ct);
+            }
+
+            if (clickAtEnd)
+            {
+                var last = points[^1];
+                await ClickLeftAsync(last.X, last.Y);
+            }
         }
-
-        if (clickAtEnd)
+        finally
         {
-            var last = points[^1];
-            await ClickLeftAsync(last.X, last.Y);
+            ReleaseAllButtons();
         }
     }
 
@@ -94,28 +89,32 @@ public sealed class MouseController
     {
         MoveTo(x, y);
         await Task.Delay(20);
-        var inputs = new INPUT[]
+        SendMouseInput(MOUSEEVENTF_WHEEL, x, y, (uint)(amount * WHEEL_DELTA));
+    }
+
+    private async Task SendClickAsync(int x, int y, uint downFlag, uint upFlag)
+    {
+        try
         {
-            new()
-            {
-                type = INPUT_MOUSE,
-                u = new InputUnion { mi = new MOUSEINPUT
-                {
-                    dwFlags = MOUSEEVENTF_WHEEL,
-                    mouseData = (uint)(amount * WHEEL_DELTA),
-                    dx = ToAbsoluteX(x), dy = ToAbsoluteY(y)
-                }}
-            }
-        };
-        SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+            MoveTo(x, y);
+            await Task.Delay(15);
+            SendMouseFlag(downFlag);
+            await Task.Delay(15);
+            SendMouseFlag(upFlag);
+        }
+        finally
+        {
+            ReleaseAllButtons();
+        }
     }
 
     private static void MoveTo(int x, int y)
     {
         SetCursorPos(x, y);
+        SendMouseInput(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK, x, y);
     }
 
-    private static void SendMouseButton(uint flags)
+    private static void SendMouseFlag(uint flags)
     {
         var inputs = new INPUT[]
         {
@@ -125,10 +124,10 @@ public sealed class MouseController
                 u = new InputUnion { mi = new MOUSEINPUT { dwFlags = flags } }
             }
         };
-        SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+        SendInputChecked(inputs);
     }
 
-    private static void SendMouseEvent(uint flags, int x, int y, uint data = 0)
+    private static void SendMouseInput(uint flags, int x, int y, uint data = 0)
     {
         var inputs = new INPUT[]
         {
@@ -140,10 +139,31 @@ public sealed class MouseController
                     dx = ToAbsoluteX(x),
                     dy = ToAbsoluteY(y),
                     mouseData = data,
-                    dwFlags = flags | MOUSEEVENTF_ABSOLUTE
+                    dwFlags = flags
                 }}
             }
         };
-        SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+        SendInputChecked(inputs);
     }
+
+    private static void SendInputChecked(INPUT[] inputs)
+    {
+        var sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+        if (sent != inputs.Length)
+            throw new InvalidOperationException($"SendInput falhou (enviados {sent}/{inputs.Length}, Win32={Marshal.GetLastWin32Error()})");
+    }
+
+    private static uint ButtonDownFlag(Core.Models.MouseButton btn) => btn switch
+    {
+        Core.Models.MouseButton.Right  => MOUSEEVENTF_RIGHTDOWN,
+        Core.Models.MouseButton.Middle => MOUSEEVENTF_MIDDLEDOWN,
+        _                              => MOUSEEVENTF_LEFTDOWN
+    };
+
+    private static uint ButtonUpFlag(Core.Models.MouseButton btn) => btn switch
+    {
+        Core.Models.MouseButton.Right  => MOUSEEVENTF_RIGHTUP,
+        Core.Models.MouseButton.Middle => MOUSEEVENTF_MIDDLEUP,
+        _                              => MOUSEEVENTF_LEFTUP
+    };
 }

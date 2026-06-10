@@ -31,7 +31,9 @@ public sealed partial class OverlayViewModel : ObservableObject
             Height     = result.MatchSize?.Height ?? region.Height,
             Confidence = result.Confidence,
             Label      = rule is not null
-                ? $"{rule.Name} ({result.Confidence:P0})"
+                ? result.MatchPixelCount > 0
+                    ? $"{rule.Name} ({result.Confidence:P0} / {result.MatchPixelCount}px)"
+                    : $"{rule.Name} ({result.Confidence:P0})"
                 : result.TemplateName ?? region.Name,
             CreatedAt  = DateTime.UtcNow
         };

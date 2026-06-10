@@ -8,7 +8,7 @@ public sealed class Template
     public string ImagePath { get; set; } = string.Empty;
     public double MinConfidence { get; set; } = 0.95;
     public int Priority { get; set; } = 0;
-    public int CooldownMs { get; set; } = 500;
+    public int CooldownMs { get; set; } = 0;
     public MatchingMethod Method { get; set; } = MatchingMethod.CcoeffNormed;
     public bool UseAutoScale { get; set; } = false;
     public double FixedScale { get; set; } = 1.0;

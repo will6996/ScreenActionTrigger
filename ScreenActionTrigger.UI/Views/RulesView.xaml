@@ -33,10 +33,12 @@
                           VerticalAlignment="Center"/>
             </StackPanel>
 
-            <ListView Grid.Row="2"
+            <ListView x:Name="RulesList"
+                      Grid.Row="2"
                       Tag="{Binding}"
-                      ItemsSource="{Binding FilteredRules}"
-                      SelectedItem="{Binding SelectedRule}">
+                      ItemsSource="{Binding RulesView}"
+                      SelectedItem="{Binding SelectedRule}"
+                      PreviewMouseRightButtonDown="RulesList_PreviewMouseRightButtonDown">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Grid>
@@ -76,29 +78,26 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
                 <ListView.ContextMenu>
-                    <ContextMenu>
+                    <ContextMenu Style="{StaticResource DarkContextMenuStyle}"
+                                 Opened="RuleContextMenu_Opened">
                         <MenuItem Header="Duplicar"
-                                  Command="{Binding PlacementTarget.Tag.DuplicateRuleCommand,
-                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                  CommandParameter="{Binding PlacementTarget.SelectedItem,
-                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                  Style="{StaticResource DarkContextMenuItemStyle}"
+                                  Command="{Binding DuplicateRuleCommand}"
+                                  CommandParameter="{Binding SelectedRule}"/>
                         <MenuItem Header="Resetar contadores"
-                                  Command="{Binding PlacementTarget.Tag.ResetRuleCommand,
-                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                  CommandParameter="{Binding PlacementTarget.SelectedItem,
-                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                  Style="{StaticResource DarkContextMenuItemStyle}"
+                                  Command="{Binding ResetRuleCommand}"
+                                  CommandParameter="{Binding SelectedRule}"/>
                         <MenuItem Header="Ativar / Desativar"
-                                  Command="{Binding PlacementTarget.Tag.ToggleRuleCommand,
-                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                  CommandParameter="{Binding PlacementTarget.SelectedItem,
-                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                        <Separator/>
+                                  Style="{StaticResource DarkContextMenuItemStyle}"
+                                  Command="{Binding ToggleRuleCommand}"
+                                  CommandParameter="{Binding SelectedRule}"/>
+                        <Separator Style="{StaticResource DarkContextMenuSeparatorStyle}"/>
                         <MenuItem Header="Remover"
+                                  Style="{StaticResource DarkContextMenuItemStyle}"
                                   Foreground="{StaticResource AccentErrorBrush}"
-                                  Command="{Binding PlacementTarget.Tag.RemoveRuleCommand,
-                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                  CommandParameter="{Binding PlacementTarget.SelectedItem,
-                                      RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                  Command="{Binding RemoveRuleCommand}"
+                                  CommandParameter="{Binding SelectedRule}"/>
                     </ContextMenu>
                 </ListView.ContextMenu>
             </ListView>
@@ -111,8 +110,7 @@
                         Command="{Binding ResetRuleCommand}"
                         CommandParameter="{Binding SelectedRule}" Margin="0,0,3,0"/>
                 <Button Content="🗑" Style="{StaticResource DangerButtonStyle}"
-                        Command="{Binding RemoveRuleCommand}"
-                        CommandParameter="{Binding SelectedRule}"/>
+                        Command="{Binding RemoveSelectedRuleCommand}"/>
             </UniformGrid>
         </Grid>
 
@@ -206,7 +204,7 @@
                               IsChecked="{Binding SelectedRule.IsEnabled}"
                               Margin="0,0,0,12"/>
 
-                    <Separator/>
+                    <Separator Style="{StaticResource PanelSeparatorStyle}"/>
 
                     <!-- ── CONDITION SECTION ── -->
                     <TextBlock Text="CONDIÇÃO" Style="{StaticResource SectionTitleStyle}"
@@ -285,6 +283,11 @@
                                             ToolTip="Capturar cor da tela"
                                             Command="{Binding PickColorFromScreenCommand}"/>
                                 </Grid>
+                                <Button Content="📷 Amostrar cor da região"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        Margin="0,6,0,0"
+                                        ToolTip="Captura a região monitorada e detecta as cores do item automaticamente"
+                                        Command="{Binding SampleColorFromRegionCommand}"/>
                             </StackPanel>
                             <StackPanel>
                                 <TextBlock Text="Tolerância (0–255)"
@@ -367,9 +370,12 @@
                                          ToolTip="Ex: 10 para baús/ícones pequenos. 0 = usar % acima."/>
                             </StackPanel>
                         </UniformGrid>
-                        <TextBlock Text="Dica: para baús ou ícones pequenos, use Pixels mínimos = 10–50 e reduza o %."
-                                   Foreground="{StaticResource TextMutedBrush}"
-                                   FontSize="10" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                        <TextBlock Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="10" TextWrapping="Wrap" Margin="0,0,0,8">
+                            <Run Text="Dica inventário: use 1 região por slot, clique em "/>
+                            <Run Text="Amostrar cor da região" FontWeight="SemiBold"/>
+                            <Run Text=", Pixels mínimos = 8–20, Tolerância = 28–40. O fundo escuro é ignorado no %."/>
+                        </TextBlock>
                     </StackPanel>
 
                     <!-- Change Detection -->
@@ -432,7 +438,7 @@
                                   IsChecked="{Binding SelectedRule.Condition.IsNegated}"/>
                     </StackPanel>
 
-                    <Separator/>
+                    <Separator Style="{StaticResource PanelSeparatorStyle}"/>
 
                     <!-- ── ACTIONS SECTION ── -->
                     <DockPanel Margin="0,8,0,6" LastChildFill="False">

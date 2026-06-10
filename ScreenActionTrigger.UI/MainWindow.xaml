@@ -31,7 +31,9 @@
 
         <!-- Custom title bar -->
         <Border Grid.Row="0" Background="{StaticResource BgDeepBrush}"
-                Height="42" MouseLeftButtonDown="TitleBar_MouseDown">
+                Height="42"
+                MouseLeftButtonDown="TitleBar_MouseDown"
+                PreviewMouseRightButtonDown="TitleBar_PreviewMouseRightButtonDown">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>

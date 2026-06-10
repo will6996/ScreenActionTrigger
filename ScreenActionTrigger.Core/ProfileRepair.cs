@@ -38,5 +38,26 @@ public static class ProfileRepair
             rule.Actions = new ObservableCollection<TriggerAction>(
                 rule.Actions ?? []);
         }
+
+        RepairColorDetectionDefaults(rule.Condition);
+    }
+
+    /// <summary>Ajusta regras antigas que exigiam 30% e não detectavam ícones pequenos.</summary>
+    public static void RepairColorDetectionDefaults(RuleCondition condition)
+    {
+        if (condition.Type != ConditionType.ColorDetection)
+            return;
+
+        if (condition.MinMatchingPixels <= 0 && condition.MinColorPercentage >= 0.15)
+        {
+            condition.MinMatchingPixels  = 8;
+            condition.MinColorPercentage = 0.03;
+        }
+
+        if (condition.ColorTolerance < 20)
+            condition.ColorTolerance = 28;
+
+        if (condition.DarkPixelThreshold <= 0)
+            condition.DarkPixelThreshold = 35;
     }
 }

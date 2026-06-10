@@ -48,11 +48,24 @@ public sealed class KeyboardController
             .Where(v => v != 0)
             .ToArray();
 
-        // Press all keys down
-        foreach (var vk in vkeys) KeyDown(vk);
-        await Task.Delay(50);
-        // Release in reverse
-        foreach (var vk in vkeys.Reverse()) KeyUp(vk);
+        try
+        {
+            foreach (var vk in vkeys) KeyDown(vk);
+            await Task.Delay(50);
+            foreach (var vk in vkeys.Reverse()) KeyUp(vk);
+        }
+        finally
+        {
+            ReleaseAllModifiers();
+        }
+    }
+
+    public void ReleaseAllModifiers()
+    {
+        KeyUp(VK_SHIFT);
+        KeyUp(VK_CONTROL);
+        KeyUp(VK_MENU);
+        KeyUp(VK_LWIN);
     }
 
     private static void KeyDown(ushort vk)

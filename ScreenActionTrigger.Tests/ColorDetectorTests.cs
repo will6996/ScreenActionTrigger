@@ -133,7 +133,9 @@ public sealed class ColorDetectorTests
             Type = ConditionType.ColorDetection,
             TargetColor        = "#0000FF",
             ColorTolerance     = 10,
-            MinColorPercentage = 0.60
+            MinMatchingPixels  = 0,
+            MinColorPercentage = 0.60,
+            ExcludeDarkPixels  = false
         };
 
         var result = _detector.Detect(frame, region, condition);
@@ -170,6 +172,53 @@ public sealed class ColorDetectorTests
         var result = _detector.Detect(Array.Empty<byte>(), region, condition);
 
         result.IsMatch.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Detect_InventorySlot_GreenBorderOnBlack_TriggersWithDarkExclusion()
+    {
+        // Simula slot de inventário: borda verde 32x32 no centro de região 48x48 preta
+        using var bmp = new Bitmap(48, 48, PixelFormat.Format32bppArgb);
+        using var g = Graphics.FromImage(bmp);
+        g.Clear(Color.Black);
+        g.FillRectangle(Brushes.Lime, 8, 8, 32, 32);
+        using var ms = new MemoryStream();
+        bmp.Save(ms, ImageFormat.Png);
+        var frame = ms.ToArray();
+
+        var region = new MonitoredRegion { Id = Guid.NewGuid(), Width = 48, Height = 48 };
+        var condition = new RuleCondition
+        {
+            Type = ConditionType.ColorDetection,
+            TargetColor = "#00FF00",
+            ColorTolerance = 28,
+            MinMatchingPixels = 8,
+            MinColorPercentage = 0.30,
+            ExcludeDarkPixels = true,
+            DarkPixelThreshold = 35
+        };
+
+        var result = _detector.Detect(frame, region, condition);
+
+        result.IsMatch.Should().BeTrue();
+        result.MatchPixelCount.Should().BeGreaterThanOrEqualTo(8);
+        result.Confidence.Should().BeGreaterThan(0.5);
+    }
+
+    [Fact]
+    public void FindTopColors_SkipsDarkBackground()
+    {
+        using var bmp = new Bitmap(40, 40, PixelFormat.Format32bppArgb);
+        using var g = Graphics.FromImage(bmp);
+        g.Clear(Color.Black);
+        g.FillRectangle(new SolidBrush(Color.FromArgb(170, 170, 170)), 10, 10, 20, 20);
+        using var ms = new MemoryStream();
+        bmp.Save(ms, ImageFormat.Png);
+
+        var colors = ColorDetector.FindTopColors(ms.ToArray(), 1);
+
+        colors.Should().NotBeEmpty();
+        colors[0].Should().NotBe("#000000");
     }
 
     [Fact]

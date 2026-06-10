@@ -20,6 +20,18 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        DispatcherUnhandledException += (_, args) =>
+        {
+            System.Diagnostics.Debug.WriteLine($"UI exception: {args.Exception}");
+            args.Handled = true;
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+        {
+            if (args.ExceptionObject is Exception ex)
+                System.Diagnostics.Debug.WriteLine($"Domain exception: {ex}");
+        };
+
         _services = ConfigureServices();
         var window = _services.GetRequiredService<MainWindow>();
         MainWindow = window;

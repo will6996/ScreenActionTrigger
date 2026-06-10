@@ -1,18 +1,24 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ScreenActionTrigger.Core;
+using ScreenActionTrigger.Core.Interfaces;
 using ScreenActionTrigger.Core.Models;
+using ScreenActionTrigger.Vision.Detectors;
 
 namespace ScreenActionTrigger.UI.ViewModels;
 
 public sealed partial class RulesViewModel : ObservableObject
 {
-    private readonly RegionsViewModel   _regionsVm;
-    private readonly TemplatesViewModel _templatesVm;
+    private readonly RegionsViewModel        _regionsVm;
+    private readonly TemplatesViewModel      _templatesVm;
+    private readonly IScreenCaptureService     _capture;
 
     public ObservableCollection<VisualRule> Rules { get; } = new();
+    public ICollectionView RulesView { get; }
 
     [ObservableProperty] private VisualRule?  _selectedRule;
     [ObservableProperty] private string       _filterText  = string.Empty;
@@ -24,14 +30,31 @@ public sealed partial class RulesViewModel : ObservableObject
     public IEnumerable<Template>        AvailableTemplates => _templatesVm.Templates;
     public IReadOnlyList<ColorPreset>   PresetColors       => Core.Models.ColorPresets.All;
 
-    public RulesViewModel(RegionsViewModel regionsVm, TemplatesViewModel templatesVm)
+    public RulesViewModel(
+        RegionsViewModel regionsVm,
+        TemplatesViewModel templatesVm,
+        IScreenCaptureService capture)
     {
         _regionsVm   = regionsVm;
         _templatesVm = templatesVm;
+        _capture     = capture;
 
         _regionsVm.Regions.CollectionChanged   += OnRegionsChanged;
         _templatesVm.Templates.CollectionChanged += OnTemplatesChanged;
+
+        RulesView = CollectionViewSource.GetDefaultView(Rules);
+        RulesView.Filter = FilterRule;
     }
+
+    private bool FilterRule(object obj)
+    {
+        if (obj is not VisualRule r) return false;
+        return (ShowDisabled || r.IsEnabled) &&
+               (string.IsNullOrEmpty(FilterText) ||
+                r.Name.Contains(FilterText, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void RefreshRulesView() => RulesView.Refresh();
 
     public bool HasRegions => _regionsVm.Regions.Count > 0;
 
@@ -54,6 +77,7 @@ public sealed partial class RulesViewModel : ObservableObject
         }
         OnPropertyChanged(nameof(AvailableRegions));
         OnPropertyChanged(nameof(AvailableTemplates));
+        RefreshRulesView();
     }
 
     [RelayCommand]
@@ -67,8 +91,10 @@ public sealed partial class RulesViewModel : ObservableObject
             Condition = new RuleCondition
             {
                 Type               = ConditionType.ColorDetection,
-                MinMatchingPixels  = 10,
-                MinColorPercentage = 0.05
+                MinMatchingPixels  = 8,
+                MinColorPercentage = 0.03,
+                ColorTolerance     = 28,
+                ExcludeDarkPixels  = true
             }
         };
         Rules.Add(rule);
@@ -85,12 +111,29 @@ public sealed partial class RulesViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void RemoveRule(VisualRule? rule)
+    private void RemoveRule(VisualRule? rule) => RemoveRuleCore(rule);
+
+    [RelayCommand(CanExecute = nameof(HasSelectedRule))]
+    private void RemoveSelectedRule() => RemoveRuleCore(SelectedRule);
+
+    private bool HasSelectedRule() => SelectedRule is not null;
+
+    private void RemoveRuleCore(VisualRule? rule)
     {
         if (rule is null) return;
-        Rules.Remove(rule);
-        if (SelectedRule == rule) SelectedRule = null;
+
+        var target = Rules.Contains(rule) ? rule : Rules.FirstOrDefault(r => r.Id == rule.Id);
+        if (target is null) return;
+
+        Rules.Remove(target);
+        if (SelectedRule == target || SelectedRule?.Id == target.Id)
+            SelectedRule = null;
+
+        RefreshRulesView();
     }
+
+    partial void OnSelectedRuleChanged(VisualRule? value)
+        => RemoveSelectedRuleCommand.NotifyCanExecuteChanged();
 
     [RelayCommand]
     private void ToggleRule(VisualRule? rule)
@@ -139,6 +182,45 @@ public sealed partial class RulesViewModel : ObservableObject
     {
         if (SelectedRule is null) return;
         ColorPickRequested?.Invoke(this, SelectedRule.Condition);
+    }
+
+    [RelayCommand]
+    private async Task SampleColorFromRegionAsync()
+    {
+        if (SelectedRule is null) return;
+
+        var region = _regionsVm.Regions.FirstOrDefault(r => r.Id == SelectedRule.RegionId);
+        if (region is null)
+        {
+            ExtraColorError = "Selecione uma região válida para amostrar a cor.";
+            return;
+        }
+
+        ExtraColorError = null;
+        var frame = await _capture.CaptureRegionAsync(region);
+        if (frame is null || frame.Length == 0)
+        {
+            ExtraColorError = "Não foi possível capturar a região. Verifique posição/tamanho.";
+            return;
+        }
+
+        var colors = ColorDetector.FindTopColors(frame, 3, SelectedRule.Condition.DarkPixelThreshold);
+        if (colors.Count == 0)
+        {
+            ExtraColorError = "Nenhuma cor encontrada — região muito escura ou vazia.";
+            return;
+        }
+
+        SelectedRule.Condition.TargetColor = colors[0];
+        foreach (var hex in colors.Skip(1))
+        {
+            if (!SelectedRule.Condition.TargetColors.Any(c =>
+                    string.Equals(c, hex, StringComparison.OrdinalIgnoreCase)))
+                SelectedRule.Condition.TargetColors.Add(hex);
+        }
+
+        ProfileRepair.RepairColorDetectionDefaults(SelectedRule.Condition);
+        OnPropertyChanged(nameof(SelectedRule));
     }
 
     [RelayCommand]
@@ -233,12 +315,6 @@ public sealed partial class RulesViewModel : ObservableObject
     public event EventHandler? ExtraColorPickRequested;
     public event EventHandler<TriggerAction>? PathRecordingRequested;
 
-    public IEnumerable<VisualRule> FilteredRules =>
-        Rules.Where(r =>
-            (ShowDisabled || r.IsEnabled) &&
-            (string.IsNullOrEmpty(FilterText) ||
-             r.Name.Contains(FilterText, StringComparison.OrdinalIgnoreCase)));
-
-    partial void OnFilterTextChanged(string value)  => OnPropertyChanged(nameof(FilteredRules));
-    partial void OnShowDisabledChanged(bool value)  => OnPropertyChanged(nameof(FilteredRules));
+    partial void OnFilterTextChanged(string value)  => RefreshRulesView();
+    partial void OnShowDisabledChanged(bool value)  => RefreshRulesView();
 }
