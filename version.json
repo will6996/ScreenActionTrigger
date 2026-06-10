@@ -1,8 +1,8 @@
 {
-  "version":      "1.1.12",
-  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.12/ScreenActionTrigger.UI.exe",
-  "releaseNotes": "- Menu de contexto legível no tema escuro\n- Corrige Remover/Duplicar no clique direito das regras e regiões",
-  "mandatory":    false,
-  "fileSize": 113157411,
-  "releasedAt":   "2026-06-09T23:00:00Z"
+  "version":      "1.1.13",
+  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.13/ScreenActionTrigger.UI.exe",
+  "releaseNotes": "- Corrige crash ao abrir (estilo Separator duplicado)\n- Menu de contexto legível e Remover funcionando",
+  "mandatory":    true,
+  "fileSize": 113157336,
+  "releasedAt":   "2026-06-10T00:00:00Z"
 }

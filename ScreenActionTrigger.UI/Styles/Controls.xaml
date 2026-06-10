@@ -360,21 +360,6 @@
         </Setter>
     </Style>
 
-    <Style TargetType="Separator">
-        <Setter Property="Height"     Value="1"/>
-        <Setter Property="Margin"     Value="6,4"/>
-        <Setter Property="Background" Value="{StaticResource BgBorderBrush}"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Separator">
-                    <Border Background="{TemplateBinding Background}"
-                            Height="{TemplateBinding Height}"
-                            Margin="{TemplateBinding Margin}"/>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
     <!-- ToolTip -->
     <Style TargetType="ToolTip">
         <Setter Property="Background"    Value="{StaticResource BgElevatedBrush}"/>
