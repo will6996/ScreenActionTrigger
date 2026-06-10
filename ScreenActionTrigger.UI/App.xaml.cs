@@ -28,7 +28,6 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        _services?.GetService<MainViewModel>()?.SaveAutoSave();
         _services?.GetService<GlobalHotkeyService>()?.Dispose();
         if (_services is IDisposable d) d.Dispose();
         base.OnExit(e);

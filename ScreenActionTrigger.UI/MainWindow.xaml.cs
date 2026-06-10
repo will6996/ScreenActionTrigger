@@ -10,6 +10,8 @@ public partial class MainWindow : Window
 {
     public MainViewModel ViewModel { get; }
     private readonly GlobalHotkeyService _hotkeys;
+    private bool _allowClose;
+    private bool _isShuttingDown;
 
     public MainWindow(MainViewModel viewModel, GlobalHotkeyService hotkeys)
     {
@@ -24,8 +26,7 @@ public partial class MainWindow : Window
 
         ViewModel.SettingsVM.PropertyChanged += OnSettingsChanged;
         Loaded  += OnWindowLoaded;
-        Closing += (_, _) => ViewModel.SaveAutoSave();
-        Closed  += (_, _) => { /* hotkeys vivem no serviço até o app fechar */ };
+        Closing += OnClosing;
     }
 
     private async void OnWindowLoaded(object sender, RoutedEventArgs e)
@@ -33,6 +34,31 @@ public partial class MainWindow : Window
         RefreshHotkeys();
         await ViewModel.LoadAutoSaveAsync();
         RefreshHotkeys();
+    }
+
+    private async void OnClosing(object? sender, CancelEventArgs e)
+    {
+        if (_allowClose)
+            return;
+
+        e.Cancel = true;
+        if (_isShuttingDown)
+            return;
+
+        _isShuttingDown = true;
+        try
+        {
+            await ViewModel.ShutdownAsync();
+        }
+        catch (Exception ex)
+        {
+            ViewModel.StatusText = $"Erro ao fechar: {ex.Message}";
+        }
+        finally
+        {
+            _allowClose = true;
+            Close();
+        }
     }
 
     private void RefreshHotkeys()
@@ -56,7 +82,7 @@ public partial class MainWindow : Window
 
     private void OnHotkeyRegistrationChanged(object? sender, HotkeyRegistrationEventArgs e)
     {
-        Dispatcher.Invoke(() =>
+        Dispatcher.BeginInvoke(() =>
         {
             if (e.StartStopOk && e.PauseOk)
                 return;
@@ -109,7 +135,7 @@ public partial class MainWindow : Window
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        // TextBoxes capturam F9/F10 — repassa para os comandos quando o foco está num campo de texto
+        // F9/F10 global já tratados pelo RegisterHotKey — aqui só repassa quando foco está em TextBox
         if (e.Handled || e.OriginalSource is not System.Windows.Controls.TextBox)
             return;
 
@@ -118,11 +144,10 @@ public partial class MainWindow : Window
             e.Handled = true;
             _ = ViewModel.ToggleMonitoringCommand.ExecuteAsync(null);
         }
-        else if (e.Key == Key.F10)
+        else if (e.Key == Key.F10 && ViewModel.IsMonitoring)
         {
             e.Handled = true;
-            if (ViewModel.IsMonitoring)
-                _ = ViewModel.TogglePauseCommand.ExecuteAsync(null);
+            _ = ViewModel.TogglePauseCommand.ExecuteAsync(null);
         }
     }
 }

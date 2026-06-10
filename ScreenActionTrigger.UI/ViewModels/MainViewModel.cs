@@ -21,6 +21,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool   _isPaused;
     [ObservableProperty] private string? _currentProfilePath;
     [ObservableProperty] private ExecutionProfile _profile = new() { Name = "Padrão" };
+    [ObservableProperty] private bool _isBusy;
 
     public UpdateViewModel     UpdateVM     { get; }
     public RegionsViewModel    RegionsVM    { get; }
@@ -70,9 +71,11 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnProfileChanged(ExecutionProfile value) => SyncChildVMs();
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanRunMonitoringCommand))]
     private async Task StartMonitoringAsync()
     {
+        if (IsBusy) return;
+        IsBusy = true;
         try
         {
             Profile.Regions   = new List<MonitoredRegion>(RegionsVM.Regions);
@@ -80,37 +83,59 @@ public sealed partial class MainViewModel : ObservableObject
             Profile.Templates = new List<Template>(TemplatesVM.Templates);
             Profile.Settings  = SettingsVM.Settings;
 
-            await _monitoring.StartAsync(Profile);
+            await _monitoring.StartAsync(Profile).ConfigureAwait(true);
             IsMonitoring = true;
             IsPaused     = false;
             StatusText   = $"Monitorando {Profile.Regions.Count(r => r.IsEnabled)} regiões…";
             Title        = $"Screen Action Trigger — {Profile.Name} ▶";
-            SaveAutoSave();
+            _ = SaveAutoSaveAsync();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to start monitoring");
             StatusText = $"Erro: {ex.Message}";
         }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanRunMonitoringCommand))]
     private async Task StopMonitoringAsync()
     {
-        await _monitoring.StopAsync();
-        IsMonitoring = false;
-        IsPaused     = false;
-        StatusText   = "Monitoramento parado";
-        Title        = $"Screen Action Trigger — {Profile.Name}";
+        if (IsBusy) return;
+        IsBusy = true;
+        try
+        {
+            await _monitoring.StopAsync().ConfigureAwait(true);
+            IsMonitoring = false;
+            IsPaused     = false;
+            StatusText   = "Monitoramento parado";
+            Title        = $"Screen Action Trigger — {Profile.Name}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanRunMonitoringCommand))]
     private async Task ToggleMonitoringAsync()
     {
         if (IsMonitoring)
             await StopMonitoringAsync();
         else
             await StartMonitoringAsync();
+    }
+
+    private bool CanRunMonitoringCommand() => !IsBusy;
+
+    partial void OnIsBusyChanged(bool value)
+    {
+        StartMonitoringCommand.NotifyCanExecuteChanged();
+        StopMonitoringCommand.NotifyCanExecuteChanged();
+        ToggleMonitoringCommand.NotifyCanExecuteChanged();
     }
 
     [RelayCommand(CanExecute = nameof(CanTogglePause))]
@@ -235,18 +260,26 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    public void SaveAutoSave()
+    public async Task SaveAutoSaveAsync()
     {
         try
         {
             PushChangesToProfile();
             var path = AppPaths.AutoSaveProfilePath;
-            _profileManager.SaveAsync(Profile, path).GetAwaiter().GetResult();
+            await _profileManager.SaveAsync(Profile, path).ConfigureAwait(false);
             _logger.LogInformation("Auto-save profile saved to {Path}", path);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to save auto-save profile");
         }
+    }
+
+    public async Task ShutdownAsync()
+    {
+        if (IsMonitoring)
+            await _monitoring.StopAsync().ConfigureAwait(true);
+
+        await SaveAutoSaveAsync().ConfigureAwait(false);
     }
 }
