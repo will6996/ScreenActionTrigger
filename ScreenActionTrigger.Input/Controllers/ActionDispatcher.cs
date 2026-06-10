@@ -42,20 +42,8 @@ public sealed class ActionDispatcher : IActionDispatcher, IDisposable
         {
             if (action.DelayBeforeMs > 0) await Task.Delay(action.DelayBeforeMs, ct);
 
-            // Determine coordinates
-            int x = 0, y = 0;
-            if (action.UseDetectionCoordinates && context?.MatchLocation.HasValue == true)
-            {
-                var loc = context.MatchLocation!.Value;
-                var sz  = context.MatchSize ?? new System.Drawing.Size(0, 0);
-                x = loc.X + sz.Width  / 2;
-                y = loc.Y + sz.Height / 2;
-            }
-            else if (action.TargetX.HasValue && action.TargetY.HasValue)
-            {
-                x = action.TargetX.Value;
-                y = action.TargetY.Value;
-            }
+            var (x, y) = ResolveClickPoint(action, context);
+            _logger.LogDebug("Action {Type} at ({X},{Y})", action.Type, x, y);
 
             for (int i = 0; i < action.RepeatCount; i++)
             {
@@ -100,8 +88,14 @@ public sealed class ActionDispatcher : IActionDispatcher, IDisposable
             case ActionType.KeyPress:
                 if (action.KeyCode is not null) await _keyboard.PressKeyAsync(action.KeyCode); break;
             case ActionType.KeyCombination:
-                if (action.KeyCombination?.Length > 0)
-                    await _keyboard.SendCombinationAsync(action.KeyCombination); break;
+            {
+                var combo = action.KeyCombination?.Length > 0
+                    ? action.KeyCombination
+                    : KeyCombinationParser.Parse(action.KeyCode);
+                if (combo.Length > 0)
+                    await _keyboard.SendCombinationAsync(combo);
+                break;
+            }
             case ActionType.KeyHold:
                 if (action.KeyCode is not null)
                     await _keyboard.HoldKeyAsync(action.KeyCode, action.HoldDurationMs); break;
@@ -195,6 +189,26 @@ public sealed class ActionDispatcher : IActionDispatcher, IDisposable
         // Delegate to UI layer via task queue; basic Beep as fallback
         // Beep de notificação
         try { Console.Beep(800, 200); } catch { }
+    }
+
+    private static (int x, int y) ResolveClickPoint(TriggerAction action, DetectionResult? context)
+    {
+        if (action.UseDetectionCoordinates && context is not null)
+        {
+            if (context.MatchLocation is { } loc)
+            {
+                var sz = context.MatchSize ?? System.Drawing.Size.Empty;
+                return (loc.X + sz.Width / 2, loc.Y + sz.Height / 2);
+            }
+
+            if (context.RegionBounds is { } bounds)
+                return (bounds.X + bounds.Width / 2, bounds.Y + bounds.Height / 2);
+        }
+
+        if (action.TargetX.HasValue && action.TargetY.HasValue)
+            return (action.TargetX.Value, action.TargetY.Value);
+
+        return (0, 0);
     }
 
     public void Dispose()

@@ -1,4 +1,6 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using ScreenActionTrigger.Core;
 
 namespace ScreenActionTrigger.Core.Models;
 
@@ -10,7 +12,7 @@ public sealed class RuleCondition
     // Color detection
     public string TargetColor { get; set; } = "#0000FF";
     /// <summary>Cores adicionais alvo (qualquer uma satisfaz a condição).</summary>
-    public List<string> TargetColors { get; set; } = new();
+    public ObservableCollection<string> TargetColors { get; set; } = new();
     public int ColorTolerance { get; set; } = 15;
     public double MinColorPercentage { get; set; } = 0.30;
     public bool UseDominantColor { get; set; } = false;
@@ -30,10 +32,17 @@ public sealed class RuleCondition
     public IEnumerable<string> GetAllTargetColors()
     {
         var colors = new List<string>();
-        if (!string.IsNullOrWhiteSpace(TargetColor))
-            colors.Add(TargetColor);
-        colors.AddRange(TargetColors.Where(c => !string.IsNullOrWhiteSpace(c)));
-        return colors.Distinct(StringComparer.OrdinalIgnoreCase);
+        if (ColorHexHelper.TryNormalize(TargetColor, out var main))
+            colors.Add(main);
+
+        foreach (var raw in TargetColors.Where(c => !string.IsNullOrWhiteSpace(c)))
+        {
+            if (ColorHexHelper.TryNormalize(raw, out var hex)
+                && !colors.Contains(hex, StringComparer.OrdinalIgnoreCase))
+                colors.Add(hex);
+        }
+
+        return colors;
     }
 
     public string GetDescription() => Type switch

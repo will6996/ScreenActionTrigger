@@ -20,6 +20,10 @@ public static class AppPaths
     /// <summary>Pasta de perfis salvo (.satprofile)</summary>
     public static string ProfilesDir { get; } = Path.Combine(DataRoot, "Profiles");
 
+    /// <summary>Perfil salvo automaticamente ao fechar o app</summary>
+    public static string AutoSaveProfilePath { get; } =
+        Path.Combine(ProfilesDir, "autosave.satprofile");
+
     /// <summary>Pasta de imagens de templates</summary>
     public static string TemplatesDir { get; } = Path.Combine(DataRoot, "Templates");
 

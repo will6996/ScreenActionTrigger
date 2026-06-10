@@ -9,6 +9,8 @@ public sealed record DetectionResult
     public double Confidence { get; set; }
     public Point? MatchLocation { get; set; }
     public Size? MatchSize { get; set; }
+    /// <summary>Região monitorada em coordenadas de tela (fallback do clique).</summary>
+    public Rectangle? RegionBounds { get; set; }
     public ConditionType DetectionType { get; set; }
     public string? TemplateName { get; set; }
     public string? RegionName { get; set; }

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ScreenActionTrigger.Core;
 using ScreenActionTrigger.Core.Models;
 
 namespace ScreenActionTrigger.UI.ViewModels;
@@ -17,6 +18,7 @@ public sealed partial class RulesViewModel : ObservableObject
     [ObservableProperty] private string       _filterText  = string.Empty;
     [ObservableProperty] private bool         _showDisabled = true;
     [ObservableProperty] private string       _newExtraColor = "#FF0000";
+    [ObservableProperty] private string?      _extraColorError;
 
     public IEnumerable<MonitoredRegion> AvailableRegions   => _regionsVm.Regions;
     public IEnumerable<Template>        AvailableTemplates => _templatesVm.Templates;
@@ -45,9 +47,21 @@ public sealed partial class RulesViewModel : ObservableObject
     public void SetProfile(ExecutionProfile profile)
     {
         Rules.Clear();
-        foreach (var r in profile.Rules) Rules.Add(r);
+        foreach (var r in profile.Rules)
+        {
+            EnsureObservableColors(r.Condition);
+            Rules.Add(r);
+        }
         OnPropertyChanged(nameof(AvailableRegions));
         OnPropertyChanged(nameof(AvailableTemplates));
+    }
+
+    private static void EnsureObservableColors(RuleCondition condition)
+    {
+        if (condition.TargetColors is ObservableCollection<string>)
+            return;
+
+        condition.TargetColors = new ObservableCollection<string>(condition.TargetColors);
     }
 
     [RelayCommand]
@@ -133,9 +147,21 @@ public sealed partial class RulesViewModel : ObservableObject
     [RelayCommand]
     private void AddExtraTargetColor()
     {
-        if (SelectedRule is null || string.IsNullOrWhiteSpace(NewExtraColor)) return;
-        SelectedRule.Condition.TargetColors.Add(NewExtraColor.Trim());
-        OnPropertyChanged(nameof(SelectedRule));
+        ExtraColorError = null;
+        if (SelectedRule is null || string.IsNullOrWhiteSpace(NewExtraColor))
+            return;
+
+        if (!ColorHexHelper.TryNormalize(NewExtraColor, out var hex))
+        {
+            ExtraColorError = "Cor inválida. Use #RRGGBB (ex: #FF0000)";
+            return;
+        }
+
+        var colors = SelectedRule.Condition.TargetColors;
+        if (!colors.Any(c => string.Equals(c, hex, StringComparison.OrdinalIgnoreCase)))
+            colors.Add(hex);
+
+        NewExtraColor = "#FF0000";
     }
 
     [RelayCommand]
@@ -143,7 +169,6 @@ public sealed partial class RulesViewModel : ObservableObject
     {
         if (SelectedRule is null || color is null) return;
         SelectedRule.Condition.TargetColors.Remove(color);
-        OnPropertyChanged(nameof(SelectedRule));
     }
 
     [RelayCommand]

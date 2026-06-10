@@ -28,6 +28,8 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _services?.GetService<MainViewModel>()?.SaveAutoSave();
+        _services?.GetService<GlobalHotkeyService>()?.Dispose();
         if (_services is IDisposable d) d.Dispose();
         base.OnExit(e);
     }
@@ -70,6 +72,9 @@ public partial class App : Application
 
         // Update service
         services.AddSingleton<IUpdateService, UpdateService>();
+
+        // Global hotkeys (F9/F10 etc.)
+        services.AddSingleton<GlobalHotkeyService>();
 
         // ViewModels
         services.AddSingleton<UpdateViewModel>();

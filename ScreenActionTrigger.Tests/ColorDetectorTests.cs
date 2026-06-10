@@ -29,6 +29,27 @@ public sealed class ColorDetectorTests
     }
 
     [Fact]
+    public void Detect_SolidBlueImage_SetsMatchLocationAtCentroid()
+    {
+        var frame = CreateSolidColorPng(100, 100, Color.Blue);
+        var region = new MonitoredRegion { Id = Guid.NewGuid(), X = 200, Y = 300, Width = 100, Height = 100 };
+        var condition = new RuleCondition
+        {
+            Type = ConditionType.ColorDetection,
+            TargetColor        = "#0000FF",
+            ColorTolerance     = 10,
+            MinColorPercentage = 0.90
+        };
+
+        var result = _detector.Detect(frame, region, condition);
+
+        result.IsMatch.Should().BeTrue();
+        result.MatchLocation.Should().NotBeNull();
+        result.MatchLocation!.Value.X.Should().BeInRange(240, 260);
+        result.MatchLocation!.Value.Y.Should().BeInRange(340, 360);
+    }
+
+    [Fact]
     public void Detect_SolidBlueImage_AllBluePixels_ShouldMatch()
     {
         var frame = CreateSolidColorPng(100, 100, Color.Blue);

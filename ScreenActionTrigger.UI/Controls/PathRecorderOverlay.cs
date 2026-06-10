@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using ScreenActionTrigger.Core.Models;
+using ScreenActionTrigger.UI.Infrastructure;
 
 namespace ScreenActionTrigger.UI.Controls;
 
@@ -68,9 +69,10 @@ public sealed class PathRecorderOverlay : Window
 
     private void OnLeftClick(object sender, MouseButtonEventArgs e)
     {
-        var pos = e.GetPosition(_canvas);
-        var x   = (int)(Left + pos.X);
-        var y   = (int)(Top + pos.Y);
+        var pos      = e.GetPosition(_canvas);
+        var physical = ScreenCoordinateHelper.DipPointToPhysical(pos, this);
+        var x        = physical.X;
+        var y        = physical.Y;
 
         int delay = 50;
         if (_lastPoint is not null)

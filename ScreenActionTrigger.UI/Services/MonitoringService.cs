@@ -104,7 +104,7 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
             {
                 var tasks = enabledRegions
                     .OrderByDescending(r => r.Priority)
-                    .Select(region => ProcessRegionAsync(region, semaphore, profile.Settings, ct))
+                    .Select(region => ProcessRegionAsync(region, semaphore, profile, ct))
                     .ToArray();
 
                 await Task.WhenAll(tasks);
@@ -121,7 +121,7 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
     private async Task ProcessRegionAsync(
         MonitoredRegion region,
         SemaphoreSlim semaphore,
-        AppSettings settings,
+        ExecutionProfile profile,
         CancellationToken ct)
     {
         await semaphore.WaitAsync(ct);
@@ -130,7 +130,10 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
             var frameData = await _capture.CaptureRegionAsync(region, ct);
             if (frameData is null) return;
 
-            if (settings.GrayscaleProcessing)
+            var needsColor = profile.Rules.Any(r =>
+                r.RegionId == region.Id && r.IsEnabled && r.Condition.UsesColorDetection());
+
+            if (profile.Settings.GrayscaleProcessing && !needsColor)
                 frameData = await ConvertToGrayscaleAsync(frameData);
 
             await _ruleEngine.ProcessRegionAsync(region, frameData, ct);

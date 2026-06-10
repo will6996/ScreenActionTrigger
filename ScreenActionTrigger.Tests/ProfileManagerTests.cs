@@ -141,6 +141,43 @@ public sealed class ProfileManagerTests : IDisposable
     }
 
     [Fact]
+    public async Task SaveAndLoad_PreservesExtraTargetColors()
+    {
+        var profile = new ExecutionProfile
+        {
+            Name = "Colors",
+            Rules = new List<VisualRule>
+            {
+                new()
+                {
+                    Name = "Cor multipla",
+                    Condition = new RuleCondition
+                    {
+                        Type = ConditionType.ColorDetection,
+                        TargetColor = "#FF0000",
+                        TargetColors = new System.Collections.ObjectModel.ObservableCollection<string>
+                        {
+                            "#00FF00", "#0000FF"
+                        }
+                    }
+                }
+            },
+            Settings = new AppSettings { HotkeyStartStop = "CTRL+F9", CaptureIntervalMs = 150 }
+        };
+
+        var path = Path.Combine(_tempDir, "colors.satprofile");
+        await _repo.SaveAsync(profile, path);
+
+        var loaded = await _repo.LoadAsync(path);
+
+        loaded.Should().NotBeNull();
+        loaded!.Rules[0].Condition.TargetColor.Should().Be("#FF0000");
+        loaded.Rules[0].Condition.TargetColors.Should().BeEquivalentTo("#00FF00", "#0000FF");
+        loaded.Settings.HotkeyStartStop.Should().Be("CTRL+F9");
+        loaded.Settings.CaptureIntervalMs.Should().Be(150);
+    }
+
+    [Fact]
     public async Task CurrentProfile_UpdatedAfterLoad()
     {
         var profile = _repo.CreateNew("CurrentTest");

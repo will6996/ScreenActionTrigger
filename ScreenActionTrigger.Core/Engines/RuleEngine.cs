@@ -58,7 +58,8 @@ public sealed class RuleEngine : IRuleEngine
             try
             {
                 var result = await EvaluateConditionAsync(frameData, region, rule.Condition, ct);
-                result.RegionName = region.Name;
+                result.RegionName   = region.Name;
+                result.RegionBounds = region.Bounds;
 
                 DetectionCompleted?.Invoke(this, new DetectionEventArgs
                 {

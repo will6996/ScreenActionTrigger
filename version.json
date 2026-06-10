@@ -1,8 +1,8 @@
 {
-  "version":      "1.1.4",
-  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.4/ScreenActionTrigger.UI.exe",
-  "releaseNotes": "- Corrige contraste: abas e ComboBox legíveis no tema escuro",
+  "version":      "1.1.8",
+  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.8/ScreenActionTrigger.UI.exe",
+  "releaseNotes": "- Salvamento automático ao fechar (restaura sessão ao abrir)\n- Cores adicionais nas regras corrigidas\n- Atalhos globais F9/F10 funcionando\n- Clique na cor detectada dentro da região\n- Correção de DPI na seleção de região",
   "mandatory":    false,
-  "fileSize":     113086165,
-  "releasedAt":   "2026-06-10T03:00:00Z"
+  "fileSize":     113141640,
+  "releasedAt":   "2026-06-09T12:00:00Z"
 }

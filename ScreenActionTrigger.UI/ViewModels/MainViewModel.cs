@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using ScreenActionTrigger.Core.Interfaces;
 using ScreenActionTrigger.Core.Models;
+using ScreenActionTrigger.UI.Infrastructure;
 
 namespace ScreenActionTrigger.UI.ViewModels;
 
@@ -84,6 +85,7 @@ public sealed partial class MainViewModel : ObservableObject
             IsPaused     = false;
             StatusText   = $"Monitorando {Profile.Regions.Count(r => r.IsEnabled)} regiões…";
             Title        = $"Screen Action Trigger — {Profile.Name} ▶";
+            SaveAutoSave();
         }
         catch (Exception ex)
         {
@@ -103,6 +105,15 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task ToggleMonitoringAsync()
+    {
+        if (IsMonitoring)
+            await StopMonitoringAsync();
+        else
+            await StartMonitoringAsync();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanTogglePause))]
     private async Task TogglePauseAsync()
     {
         if (IsPaused)
@@ -118,6 +129,10 @@ public sealed partial class MainViewModel : ObservableObject
             StatusText = "Pausado";
         }
     }
+
+    private bool CanTogglePause() => IsMonitoring;
+
+    partial void OnIsMonitoringChanged(bool value) => TogglePauseCommand.NotifyCanExecuteChanged();
 
     [RelayCommand]
     private async Task NewProfileAsync()
@@ -187,12 +202,51 @@ public sealed partial class MainViewModel : ObservableObject
         StatusText = _overlay.IsVisible ? "Overlay visível" : "Overlay oculto";
     }
 
-    private void PushChangesToProfile()
+    public void PushChangesToProfile()
     {
         Profile.Regions   = new List<MonitoredRegion>(RegionsVM.Regions);
         Profile.Rules     = new List<VisualRule>(RulesVM.Rules);
         Profile.Templates = new List<Template>(TemplatesVM.Templates);
         Profile.Settings  = SettingsVM.Settings;
         Profile.UpdatedAt = DateTime.UtcNow;
+    }
+
+    public async Task LoadAutoSaveAsync()
+    {
+        try
+        {
+            var path = AppPaths.AutoSaveProfilePath;
+            if (!File.Exists(path))
+                return;
+
+            var loaded = await _profileManager.LoadAsync(path);
+            if (loaded is null)
+                return;
+
+            Profile            = loaded;
+            CurrentProfilePath = path;
+            Title              = $"Screen Action Trigger — {Profile.Name}";
+            StatusText         = "Sessão anterior restaurada";
+            _logger.LogInformation("Auto-save profile loaded from {Path}", path);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load auto-save profile");
+        }
+    }
+
+    public void SaveAutoSave()
+    {
+        try
+        {
+            PushChangesToProfile();
+            var path = AppPaths.AutoSaveProfilePath;
+            _profileManager.SaveAsync(Profile, path).GetAwaiter().GetResult();
+            _logger.LogInformation("Auto-save profile saved to {Path}", path);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save auto-save profile");
+        }
     }
 }

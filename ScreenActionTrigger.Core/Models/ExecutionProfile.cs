@@ -20,7 +20,7 @@ public sealed class AppSettings
     public int MaxParallelRegions { get; set; } = 10;
     public bool LogDetections { get; set; } = true;
     public bool LogActions { get; set; } = true;
-    public bool GrayscaleProcessing { get; set; } = true;
+    public bool GrayscaleProcessing { get; set; } = false;
     public bool StartMinimized { get; set; } = false;
     public bool MinimizeToTray { get; set; } = true;
     public string HotkeyStartStop { get; set; } = "F9";

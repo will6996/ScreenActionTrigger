@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using ScreenActionTrigger.UI.Infrastructure;
 
 namespace ScreenActionTrigger.UI.Controls;
 
@@ -101,7 +102,8 @@ public sealed class RegionSelectorOverlay : Window
 
         if (w >= 5 && h >= 5)
         {
-            SelectedRegion = new System.Drawing.Rectangle((int)x, (int)y, (int)w, (int)h);
+            SelectedRegion = ScreenCoordinateHelper.DipRectToPhysical(
+                new Rect(x, y, w, h), this);
             RegionSelected?.Invoke(this, SelectedRegion);
             DialogResult = true;
         }

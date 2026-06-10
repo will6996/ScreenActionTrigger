@@ -29,11 +29,16 @@ public sealed class ChangeDetector
 
             return new DetectionResult
             {
-                RegionId = region.Id,
-                IsMatch = isMatch,
-                Confidence = changeRatio,
+                RegionId      = region.Id,
+                IsMatch       = isMatch,
+                Confidence    = changeRatio,
                 DetectionType = ConditionType.ChangeDetection,
-                Timestamp = DateTime.UtcNow
+                RegionBounds  = region.Bounds,
+                MatchLocation = isMatch
+                    ? new Point(region.X + region.Width / 2, region.Y + region.Height / 2)
+                    : null,
+                MatchSize     = isMatch ? new Size(1, 1) : null,
+                Timestamp     = DateTime.UtcNow
             };
         }
         catch (Exception ex)

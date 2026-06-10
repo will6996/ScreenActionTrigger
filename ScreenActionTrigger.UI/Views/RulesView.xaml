@@ -298,6 +298,22 @@
                             <Button Content="+ Adicionar" Style="{StaticResource BaseButtonStyle}"
                                     Command="{Binding AddExtraTargetColorCommand}"/>
                         </StackPanel>
+                        <TextBlock Text="{Binding ExtraColorError}"
+                                   Foreground="{StaticResource AccentErrorBrush}"
+                                   FontSize="11" Margin="0,0,0,6">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ExtraColorError,
+                                            Converter={StaticResource NotNullToBoolConverter}}"
+                                                     Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <ItemsControl ItemsSource="{Binding SelectedRule.Condition.TargetColors}"
                                       Margin="0,0,0,8">
                             <ItemsControl.ItemTemplate>
@@ -496,6 +512,12 @@
                                                             <DataTrigger
                                                                 Binding="{Binding Type}"
                                                                 Value="{x:Static models:ActionType.KeyRelease}">
+                                                                <Setter Property="Visibility"
+                                                                        Value="Visible"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger
+                                                                Binding="{Binding Type}"
+                                                                Value="{x:Static models:ActionType.KeyCombination}">
                                                                 <Setter Property="Visibility"
                                                                         Value="Visible"/>
                                                             </DataTrigger>

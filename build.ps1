@@ -32,7 +32,7 @@ Write-Host "      ✓ Testes OK" -ForegroundColor Green
 
 # ── Publish ────────────────────────────────────────────────
 if ($publish -eq "none") {
-    Write-Host "`n[3/3] Publicação ignorada (passe -publish fd ou -publish sc)" `
+    Write-Host "`n[3/3] Publicacao ignorada. Use: -publish fd ou -publish sc" `
         -ForegroundColor DarkGray
     exit 0
 }
