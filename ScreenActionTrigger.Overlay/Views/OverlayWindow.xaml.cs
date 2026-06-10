@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using ScreenActionTrigger.Overlay.Infrastructure;
 using ScreenActionTrigger.Overlay.ViewModels;
 
 namespace ScreenActionTrigger.Overlay.Views;
@@ -29,9 +30,7 @@ public partial class OverlayWindow : Window
         DataContext = viewModel;
         InitializeComponent();
 
-        Width  = SystemParameters.PrimaryScreenWidth;
-        Height = SystemParameters.PrimaryScreenHeight;
-        Left = Top = 0;
+        OverlayCoordinateHelper.ConfigureFullScreenWindow(this);
 
         SourceInitialized += OnSourceInitialized;
     }

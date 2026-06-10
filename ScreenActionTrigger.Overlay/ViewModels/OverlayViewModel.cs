@@ -2,6 +2,7 @@ using System.Drawing;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ScreenActionTrigger.Core.Models;
+using ScreenActionTrigger.Overlay.Infrastructure;
 
 namespace ScreenActionTrigger.Overlay.ViewModels;
 
@@ -21,11 +22,11 @@ public sealed partial class OverlayViewModel : ObservableObject
             Regions.Add(new RegionOverlayItem(r));
     }
 
-    public void UpdateRegionsPreview(IEnumerable<MonitoredRegion> regions)
+    public void UpdateRegionsPreview(IEnumerable<MonitoredRegion> regions, Guid? highlightRegionId = null)
     {
         Regions.Clear();
         foreach (var r in regions)
-            Regions.Add(new RegionOverlayItem(r));
+            Regions.Add(new RegionOverlayItem(r, r.Id == highlightRegionId));
     }
 
     public void UpdateClickTargets(IEnumerable<ClickTargetMarker> targets)
@@ -41,10 +42,10 @@ public sealed partial class OverlayViewModel : ObservableObject
         {
             RegionId   = result.RegionId,
             RegionName = region.Name,
-            X          = result.MatchLocation?.X ?? region.X,
-            Y          = result.MatchLocation?.Y ?? region.Y,
-            Width      = result.MatchSize?.Width  ?? region.Width,
-            Height     = result.MatchSize?.Height ?? region.Height,
+            X          = OverlayCoordinateHelper.ToDipX(result.MatchLocation?.X ?? region.X),
+            Y          = OverlayCoordinateHelper.ToDipY(result.MatchLocation?.Y ?? region.Y),
+            Width      = OverlayCoordinateHelper.ToDipWidth(result.MatchSize?.Width ?? region.Width),
+            Height     = OverlayCoordinateHelper.ToDipHeight(result.MatchSize?.Height ?? region.Height),
             Confidence = result.Confidence,
             Label      = rule is not null
                 ? result.MatchPixelCount > 0
@@ -74,19 +75,25 @@ public sealed partial class OverlayViewModel : ObservableObject
 
 public sealed class RegionOverlayItem
 {
-    public Guid   Id       { get; }
-    public string Name     { get; }
-    public double Left     { get; }
-    public double Top      { get; }
-    public double Width    { get; }
-    public double Height   { get; }
-    public int    Priority { get; }
+    public Guid   Id            { get; }
+    public string Name          { get; }
+    public double Left          { get; }
+    public double Top           { get; }
+    public double Width         { get; }
+    public double Height        { get; }
+    public int    Priority      { get; }
+    public bool   IsHighlighted { get; }
 
-    public RegionOverlayItem(MonitoredRegion r)
+    public RegionOverlayItem(MonitoredRegion r, bool isHighlighted = false)
     {
-        Id = r.Id; Name = r.Name;
-        Left = r.X; Top = r.Y; Width = r.Width; Height = r.Height;
-        Priority = r.Priority;
+        Id            = r.Id;
+        Name          = r.Name;
+        Left          = OverlayCoordinateHelper.ToDipX(r.X);
+        Top           = OverlayCoordinateHelper.ToDipY(r.Y);
+        Width         = OverlayCoordinateHelper.ToDipWidth(r.Width);
+        Height        = OverlayCoordinateHelper.ToDipHeight(r.Height);
+        Priority      = r.Priority;
+        IsHighlighted = isHighlighted;
     }
 }
 
@@ -98,8 +105,8 @@ public sealed class ClickTargetOverlayItem
 
     public ClickTargetOverlayItem(ClickTargetMarker marker)
     {
-        Left  = marker.X - 12;
-        Top   = marker.Y - 12;
+        Left  = OverlayCoordinateHelper.ToDipX(marker.X) - 12;
+        Top   = OverlayCoordinateHelper.ToDipY(marker.Y) - 12;
         Label = marker.Label;
     }
 }

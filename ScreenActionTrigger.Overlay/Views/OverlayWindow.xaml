@@ -31,13 +31,35 @@
                 <DataTemplate>
                     <Grid>
                         <Rectangle Width="{Binding Width}" Height="{Binding Height}"
-                                   Stroke="#5500AAFF" StrokeThickness="2"
-                                   Fill="Transparent" StrokeDashArray="4 2"/>
+                                   StrokeThickness="2.5"
+                                   Fill="Transparent" StrokeDashArray="4 2">
+                            <Rectangle.Style>
+                                <Style TargetType="Rectangle">
+                                    <Setter Property="Stroke" Value="#5500AAFF"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
+                                            <Setter Property="Stroke" Value="#FFFFCC00"/>
+                                            <Setter Property="StrokeThickness" Value="3"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Rectangle.Style>
+                        </Rectangle>
                         <TextBlock Text="{Binding Name}"
-                                   Foreground="#FF00AAFF"
                                    FontSize="11" FontWeight="Bold"
                                    Margin="4,-16,0,0"
-                                   VerticalAlignment="Top"/>
+                                   VerticalAlignment="Top">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="#FF00AAFF"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
+                                            <Setter Property="Foreground" Value="#FFFFCC00"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </Grid>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

@@ -46,8 +46,11 @@ public sealed class OverlayService : IOverlayService
 
     public void ShowConfigurationPreview(
         IEnumerable<MonitoredRegion> regions,
-        IEnumerable<ClickTargetMarker> clickTargets)
+        IEnumerable<ClickTargetMarker> clickTargets,
+        Guid? highlightRegionId = null)
     {
+        if (!IsEnabled) return;
+
         RunOnUiThread(() =>
         {
             if (_window is null)
@@ -56,7 +59,7 @@ public sealed class OverlayService : IOverlayService
                 _window = new OverlayWindow(_viewModel);
             }
 
-            _viewModel!.UpdateRegionsPreview(regions);
+            _viewModel!.UpdateRegionsPreview(regions, highlightRegionId);
             _viewModel.UpdateClickTargets(clickTargets);
             _viewModel.ClearDetections();
             _window!.Show();

@@ -143,7 +143,8 @@
                         </Style.Triggers>
                     </Style>
                 </Grid.Style>
-                <StackPanel DataContext="{Binding SelectedRegion}">
+                <StackPanel DataContext="{Binding SelectedRegion}"
+                            LostFocus="RegionEditor_LostFocus">
                     <TextBlock Text="PROPRIEDADES" Style="{StaticResource SectionTitleStyle}"/>
 
                     <!-- Name -->
@@ -188,11 +189,16 @@
                     </UniformGrid>
 
                     <!-- Visual preview placeholder -->
-                    <TextBlock Text="Prévia da Região" Style="{StaticResource SectionTitleStyle}" Margin="0,8,0,6"/>
+                    <TextBlock Text="Prévia na Tela" Style="{StaticResource SectionTitleStyle}" Margin="0,8,0,6"/>
+                    <Button Content="Mostrar região no overlay"
+                            Style="{StaticResource AccentButtonStyle}"
+                            Margin="0,0,0,8"
+                            Command="{Binding DataContext.ShowRegionOverlayCommand,
+                                RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                     <Border Background="{StaticResource BgCardBrush}"
                             BorderBrush="{StaticResource AccentPrimaryBrush}"
-                            BorderThickness="1" CornerRadius="4" Height="120">
-                        <TextBlock Text="[Prévia em tempo real disponível durante monitoramento]"
+                            BorderThickness="1" CornerRadius="4" Height="80">
+                        <TextBlock Text="Selecione a região na lista — o retângulo amarelo aparece na tela."
                                    Foreground="{StaticResource TextMutedBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    TextWrapping="Wrap" TextAlignment="Center"

@@ -79,6 +79,9 @@ public partial class RegionsView : UserControl
         return null;
     }
 
+    private void RegionEditor_LostFocus(object sender, RoutedEventArgs e)
+        => _vm?.RequestOverlayPreview();
+
     private void OnRegionSelectionRequested(object? sender, EventArgs e)
     {
         var overlay = new RegionSelectorOverlay();

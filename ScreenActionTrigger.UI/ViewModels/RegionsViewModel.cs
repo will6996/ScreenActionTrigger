@@ -38,6 +38,9 @@ public sealed partial class RegionsViewModel : ObservableObject
         SelectedRegion = region;
     }
 
+    partial void OnSelectedRegionChanged(MonitoredRegion? value)
+        => OverlayPreviewRequested?.Invoke(this, EventArgs.Empty);
+
     [RelayCommand]
     private void DuplicateRegion(MonitoredRegion? region)
     {
@@ -96,6 +99,16 @@ public sealed partial class RegionsViewModel : ObservableObject
 
     public event EventHandler? RegionSelectionRequested;
     public event EventHandler? OverlayPreviewRequested;
+
+    [RelayCommand]
+    private void ShowRegionOverlay()
+    {
+        if (SelectedRegion is null) return;
+        OverlayPreviewRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void RequestOverlayPreview()
+        => OverlayPreviewRequested?.Invoke(this, EventArgs.Empty);
 
     public void ApplySelectedRegion(int x, int y, int w, int h)
     {

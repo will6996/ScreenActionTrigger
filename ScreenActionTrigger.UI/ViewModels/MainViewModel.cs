@@ -62,6 +62,13 @@ public sealed partial class MainViewModel : ObservableObject
         RegionsVM.OverlayPreviewRequested   += (_, _) => RefreshOverlayPreview();
         RulesVM.OverlayPreviewRequested     += (_, _) => RefreshOverlayPreview();
         SequencesVM.OverlayPreviewRequested += (_, _) => RefreshOverlayPreview();
+        SettingsVM.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(SettingsViewModel.OverlayEnabled)) return;
+            _overlay.IsEnabled = SettingsVM.OverlayEnabled;
+            if (!SettingsVM.OverlayEnabled)
+                _overlay.Hide();
+        };
         SyncChildVMs();
 
         // Verificação de atualização em background (não bloqueia o startup)
@@ -72,10 +79,12 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (IsMonitoring) return;
 
+        _overlay.IsEnabled = SettingsVM.OverlayEnabled;
         _overlay.ShowConfigurationPreview(
             RegionsVM.Regions,
-            CollectClickTargets());
-        StatusText = "Overlay: regiões e pontos de clique visíveis";
+            CollectClickTargets(),
+            RegionsVM.SelectedRegion?.Id);
+        StatusText = "Overlay: região selecionada visível na tela";
     }
 
     private IEnumerable<ClickTargetMarker> CollectClickTargets()
@@ -127,6 +136,7 @@ public sealed partial class MainViewModel : ObservableObject
         SequencesVM.SetProfile(Profile);
         TemplatesVM.SetProfile(Profile);
         SettingsVM.SetProfile(Profile);
+        _overlay.IsEnabled = Profile.Settings.OverlayEnabled;
     }
 
     partial void OnProfileChanged(ExecutionProfile value) => SyncChildVMs();
