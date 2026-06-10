@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace ScreenActionTrigger.Core.Models;
 
 public sealed class RuleCondition
@@ -7,6 +9,8 @@ public sealed class RuleCondition
 
     // Color detection
     public string TargetColor { get; set; } = "#0000FF";
+    /// <summary>Cores adicionais alvo (qualquer uma satisfaz a condição).</summary>
+    public List<string> TargetColors { get; set; } = new();
     public int ColorTolerance { get; set; } = 15;
     public double MinColorPercentage { get; set; } = 0.30;
     public bool UseDominantColor { get; set; } = false;
@@ -23,9 +27,18 @@ public sealed class RuleCondition
     public List<RuleCondition> SubConditions { get; set; } = new();
     public bool IsNegated { get; set; } = false;
 
+    public IEnumerable<string> GetAllTargetColors()
+    {
+        var colors = new List<string>();
+        if (!string.IsNullOrWhiteSpace(TargetColor))
+            colors.Add(TargetColor);
+        colors.AddRange(TargetColors.Where(c => !string.IsNullOrWhiteSpace(c)));
+        return colors.Distinct(StringComparer.OrdinalIgnoreCase);
+    }
+
     public string GetDescription() => Type switch
     {
-        ConditionType.ColorDetection   => $"Cor {TargetColor} > {MinColorPercentage:P0}",
+        ConditionType.ColorDetection   => $"Cor {string.Join("/", GetAllTargetColors())} > {MinColorPercentage:P0}",
         ConditionType.ChangeDetection  => $"Mudança > {MinChangePercentage:P0}",
         ConditionType.TemplateMatching => $"Template {TemplateId}",
         ConditionType.Composite        => $"{Operator} ({SubConditions.Count} condições)",
@@ -35,9 +48,13 @@ public sealed class RuleCondition
 
 public enum ConditionType
 {
+    [Description("Detecção por Cor")]
     ColorDetection,
+    [Description("Detecção por Mudança")]
     ChangeDetection,
+    [Description("Template (imagem)")]
     TemplateMatching,
+    [Description("Condição Composta")]
     Composite
 }
 

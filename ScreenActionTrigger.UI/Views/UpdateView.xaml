@@ -186,7 +186,7 @@
                         <Run Text=" no código."/>
                         <LineBreak/>
                         <Run Text="3. Para lançar uma atualização: compile com "/>
-                        <Run Text=".uild.ps1 -publish sc" FontFamily="Consolas"
+                        <Run Text=".\build.ps1 -publish sc" FontFamily="Consolas"
                              Foreground="{StaticResource AccentPrimaryBrush}"/>
                         <Run Text=", suba o .exe e atualize o version.json."/>
                     </TextBlock>

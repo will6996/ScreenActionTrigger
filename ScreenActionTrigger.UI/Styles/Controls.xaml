@@ -103,6 +103,24 @@
         <Setter Property="Padding"       Value="8,5"/>
         <Setter Property="FontSize"      Value="12"/>
         <Setter Property="Height"        Value="32"/>
+        <Setter Property="ItemContainerStyle" Value="{StaticResource DarkComboBoxItemStyle}"/>
+    </Style>
+
+    <Style x:Key="DarkComboBoxItemStyle" TargetType="ComboBoxItem">
+        <Setter Property="Background"   Value="{StaticResource BgElevatedBrush}"/>
+        <Setter Property="Foreground"   Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="Padding"      Value="8,6"/>
+        <Setter Property="FontSize"     Value="12"/>
+        <Style.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter Property="Background" Value="{StaticResource AccentPrimaryBrush}"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{StaticResource BgCardBrush}"/>
+                <Setter Property="Foreground" Value="{StaticResource AccentPrimaryBrush}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <!-- CheckBox -->

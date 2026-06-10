@@ -63,6 +63,33 @@ public sealed class MouseController
         await Task.CompletedTask;
     }
 
+    public async Task FollowPathAsync(
+        IReadOnlyList<Core.Models.PathPoint> points,
+        int stepDelayMs = 30,
+        bool clickAtEnd = false,
+        CancellationToken ct = default)
+    {
+        if (points.Count == 0) return;
+
+        foreach (var pt in points)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (pt.DelayMs > 0)
+                await Task.Delay(pt.DelayMs, ct);
+
+            MoveTo(pt.X, pt.Y);
+
+            if (stepDelayMs > 0)
+                await Task.Delay(stepDelayMs, ct);
+        }
+
+        if (clickAtEnd)
+        {
+            var last = points[^1];
+            await ClickLeftAsync(last.X, last.Y);
+        }
+    }
+
     public async Task ScrollAsync(int x, int y, int amount)
     {
         MoveTo(x, y);

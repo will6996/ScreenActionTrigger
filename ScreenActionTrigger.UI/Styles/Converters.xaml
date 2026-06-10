@@ -12,6 +12,7 @@
     <conv:PauseResumeConverter         x:Key="PauseResumeConverter"/>
     <conv:MonitoringStatusConverter    x:Key="MonitoringStatusConverter"/>
     <conv:ActionTypeToKeyVisConverter  x:Key="ActionTypeToKeyVisConverter"/>
+    <conv:ActionTypeToPathVisConverter x:Key="ActionTypeToPathVisConverter"/>
     <conv:EnumToStringConverter        x:Key="EnumToStringConverter"/>
     <conv:RulePlusActionConverter       x:Key="RulePlusActionConverter"/>
     <BooleanToVisibilityConverter       x:Key="StdBoolToVisConverter"/>

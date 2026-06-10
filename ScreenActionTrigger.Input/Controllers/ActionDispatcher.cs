@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using ScreenActionTrigger.Input.Win32;
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using ScreenActionTrigger.Core.Interfaces;
@@ -92,6 +93,10 @@ public sealed class ActionDispatcher : IActionDispatcher, IDisposable
             case ActionType.MousePress:       await _mouse.PressAsync(x, y, action.MouseButton); break;
             case ActionType.MouseRelease:     await _mouse.ReleaseAsync(x, y, action.MouseButton); break;
             case ActionType.MouseScroll:      await _mouse.ScrollAsync(x, y, action.ScrollAmount); break;
+            case ActionType.MouseFollowPath:
+                await _mouse.FollowPathAsync(
+                    action.PathPoints, action.PathStepDelayMs, action.PathLeftClickAtEnd, ct);
+                break;
             case ActionType.KeyPress:
                 if (action.KeyCode is not null) await _keyboard.PressKeyAsync(action.KeyCode); break;
             case ActionType.KeyCombination:
@@ -188,7 +193,8 @@ public sealed class ActionDispatcher : IActionDispatcher, IDisposable
     private static void ShowNotification(string message)
     {
         // Delegate to UI layer via task queue; basic Beep as fallback
-        NativeMethods.Beep(800, 200);
+        // Beep de notificação
+        try { Console.Beep(800, 200); } catch { }
     }
 
     public void Dispose()

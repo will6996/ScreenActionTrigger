@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace ScreenActionTrigger.Core.Models;
 
 public sealed class TriggerAction
@@ -19,6 +21,11 @@ public sealed class TriggerAction
     public int RepeatCount { get; set; } = 1;
     public int RepeatDelayMs { get; set; } = 0;
 
+    // Caminho gravado do mouse
+    public List<PathPoint> PathPoints { get; set; } = new();
+    public int PathStepDelayMs { get; set; } = 30;
+    public bool PathLeftClickAtEnd { get; set; }
+
     public string GetDescription() => Type switch
     {
         ActionType.MouseLeftClick    => "Clique Esquerdo",
@@ -34,24 +41,40 @@ public sealed class TriggerAction
         ActionType.ExecuteCommand    => $"Comando: {Command}",
         ActionType.PlaySound         => $"Som: {SoundPath}",
         ActionType.ShowNotification  => $"Notificação: {NotificationMessage}",
+        ActionType.MouseFollowPath   => $"Caminho ({PathPoints.Count} pontos)",
         _ => Type.ToString()
     };
 }
 
 public enum ActionType
 {
+    [Description("Clique Esquerdo")]
     MouseLeftClick,
+    [Description("Clique Direito")]
     MouseRightClick,
+    [Description("Clique Duplo")]
     MouseDoubleClick,
+    [Description("Pressionar Mouse")]
     MousePress,
+    [Description("Soltar Mouse")]
     MouseRelease,
+    [Description("Scroll do Mouse")]
     MouseScroll,
+    [Description("Seguir Caminho Gravado")]
+    MouseFollowPath,
+    [Description("Pressionar Tecla")]
     KeyPress,
+    [Description("Combinação de Teclas")]
     KeyCombination,
+    [Description("Segurar Tecla")]
     KeyHold,
+    [Description("Soltar Tecla")]
     KeyRelease,
+    [Description("Executar Comando")]
     ExecuteCommand,
+    [Description("Tocar Som")]
     PlaySound,
+    [Description("Exibir Notificação")]
     ShowNotification
 }
 

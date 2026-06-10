@@ -1,4 +1,6 @@
 using System.Drawing;
+using DrawingPoint = System.Drawing.Point;
+using DrawingSize  = System.Drawing.Size;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using ScreenActionTrigger.Core.Models;
@@ -84,8 +86,8 @@ public sealed class TemplateMatcher
                 : new[] { template.FixedScale };
 
             double bestConfidence = 0;
-            Point bestLocation = default;
-            Size bestSize = default;
+            DrawingPoint bestLocation = default;
+            DrawingSize  bestSize = default;
 
             foreach (double scale in scales)
             {
@@ -121,9 +123,9 @@ public sealed class TemplateMatcher
                     {
                         bestConfidence = confidence;
                         bestLocation = template.Method == MatchingMethod.SqdiffNormed
-                            ? new Point(minLoc.X, minLoc.Y)
-                            : new Point(maxLoc.X, maxLoc.Y);
-                        bestSize = new Size(scaledTmpl.Width, scaledTmpl.Height);
+                            ? new DrawingPoint(minLoc.X, minLoc.Y)
+                            : new DrawingPoint(maxLoc.X, maxLoc.Y);
+                        bestSize = new DrawingSize(scaledTmpl.Width, scaledTmpl.Height);
                     }
                 }
                 finally { scaledTmpl?.Dispose(); }
@@ -135,9 +137,9 @@ public sealed class TemplateMatcher
                 _lastExecuted[template.Id] = DateTime.UtcNow;
 
             // Translate match location back to screen coordinates
-            var screenLoc = isMatch
-                ? new System.Drawing.Point(region.X + bestLocation.X, region.Y + bestLocation.Y)
-                : (System.Drawing.Point?)null;
+            DrawingPoint? screenLoc = isMatch
+                ? new DrawingPoint(region.X + bestLocation.X, region.Y + bestLocation.Y)
+                : null;
 
             return new DetectionResult
             {
@@ -147,7 +149,7 @@ public sealed class TemplateMatcher
                 DetectionType = ConditionType.TemplateMatching,
                 TemplateName = template.Name,
                 MatchLocation = screenLoc,
-                MatchSize = isMatch ? bestSize : null,
+                MatchSize = isMatch ? (System.Drawing.Size?)bestSize : null,
                 Timestamp = DateTime.UtcNow
             };
         }

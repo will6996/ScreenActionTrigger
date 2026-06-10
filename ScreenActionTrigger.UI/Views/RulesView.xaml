@@ -162,7 +162,21 @@
                               SelectedValuePath="Id"
                               DisplayMemberPath="Name"
                               SelectedValue="{Binding SelectedRule.RegionId}"
-                              Margin="0,0,0,8"/>
+                              Margin="0,0,0,4"/>
+                    <TextBlock Text="Nenhuma região — crie uma na aba Regiões primeiro."
+                               Foreground="{StaticResource AccentWarningBrush}"
+                               FontSize="11" Margin="0,0,0,8" TextWrapping="Wrap">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasRegions}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
 
                     <!-- Priority / Cooldown / MaxExec -->
                     <UniformGrid Columns="3" Margin="0,0,0,10">
@@ -195,7 +209,13 @@
 
                     <ComboBox ItemsSource="{x:Static models:ConditionTypeValues.All}"
                               SelectedItem="{Binding SelectedRule.Condition.Type}"
-                              Margin="0,0,0,8"/>
+                              Margin="0,0,0,8">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource EnumToStringConverter}}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
 
                     <!-- Color Detection -->
                     <StackPanel Margin="0,0,0,10">
@@ -211,14 +231,43 @@
                                 </Style.Triggers>
                             </Style>
                         </StackPanel.Style>
+                        <!-- Presets rápidos -->
+                        <TextBlock Text="Cores rápidas" Style="{StaticResource LabelStyle}"/>
+                        <ItemsControl ItemsSource="{Binding PresetColors}" Margin="0,0,0,8">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Width="28" Height="28" Margin="0,0,4,4"
+                                            ToolTip="{Binding Name}"
+                                            Command="{Binding DataContext.ApplyColorPresetCommand,
+                                                RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border CornerRadius="4"
+                                                        Background="{Binding Hex, Converter={StaticResource ColorPreviewConverter}}"
+                                                        BorderBrush="{StaticResource BgBorderBrush}"
+                                                        BorderThickness="1"/>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
                         <UniformGrid Columns="2" Margin="0,0,0,6">
                             <StackPanel Margin="0,0,6,0">
-                                <TextBlock Text="Cor Alvo (#RRGGBB)"
+                                <TextBlock Text="Cor principal (#RRGGBB)"
                                            Style="{StaticResource LabelStyle}"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="32"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBox Grid.Column="0"
                                              Text="{Binding SelectedRule.Condition.TargetColor,
@@ -226,6 +275,10 @@
                                     <Border Grid.Column="1" Margin="4,1,0,1" CornerRadius="3"
                                             Background="{Binding SelectedRule.Condition.TargetColor,
                                                 Converter={StaticResource ColorPreviewConverter}}"/>
+                                    <Button Grid.Column="2" Content="🎯" Width="32" Margin="4,0,0,0"
+                                            Style="{StaticResource BaseButtonStyle}"
+                                            ToolTip="Capturar cor da tela"
+                                            Command="{Binding PickColorFromScreenCommand}"/>
                                 </Grid>
                             </StackPanel>
                             <StackPanel>
@@ -235,6 +288,35 @@
                                              UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </UniformGrid>
+
+                        <!-- Cores adicionais -->
+                        <TextBlock Text="Cores adicionais (qualquer uma satisfaz)"
+                                   Style="{StaticResource LabelStyle}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBox Width="100" Margin="0,0,6,0"
+                                     Text="{Binding NewExtraColor, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Button Content="+ Adicionar" Style="{StaticResource BaseButtonStyle}"
+                                    Command="{Binding AddExtraTargetColorCommand}"/>
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding SelectedRule.Condition.TargetColors}"
+                                      Margin="0,0,0,8">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <Border Width="18" Height="18" CornerRadius="3" Margin="0,0,6,0"
+                                                Background="{Binding Converter={StaticResource ColorPreviewConverter}}"/>
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center"
+                                                   FontFamily="Consolas" FontSize="11"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                        <Button Content="✕" Margin="8,0,0,0" Width="24" Height="24"
+                                                Style="{StaticResource GhostButtonStyle}"
+                                                Command="{Binding DataContext.RemoveExtraTargetColorCommand,
+                                                    RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                         <TextBlock Text="Mínimo de pixels (%)"
                                    Style="{StaticResource LabelStyle}"/>
                         <StackPanel Orientation="Horizontal">
@@ -298,11 +380,11 @@
                             </Style>
                         </StackPanel.Style>
                         <TextBlock Text="Template" Style="{StaticResource LabelStyle}"/>
-                        <ComboBox ItemsSource="{Binding AvailableTemplates}"
-                                  DisplayMemberPath="Name"
-                                  SelectedValuePath="Id"
-                                  SelectedValue="{Binding SelectedRule.Condition.TemplateId}"
-                                  Margin="0,0,0,4"/>
+                    <ComboBox ItemsSource="{Binding AvailableTemplates}"
+                              DisplayMemberPath="Name"
+                              SelectedValuePath="Id"
+                              SelectedValue="{Binding SelectedRule.Condition.TemplateId}"
+                              Margin="0,0,0,4"/>
                         <CheckBox Content="Negar condição (NOT)"
                                   IsChecked="{Binding SelectedRule.Condition.IsNegated}"/>
                     </StackPanel>
@@ -338,7 +420,56 @@
                                             <ComboBox
                                                 ItemsSource="{x:Static models:ActionTypeValues.All}"
                                                 SelectedItem="{Binding Type}"
-                                                Margin="0,0,0,6"/>
+                                                Margin="0,0,0,6">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Converter={StaticResource EnumToStringConverter}}"/>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+
+                                            <!-- Caminho gravado -->
+                                            <StackPanel Margin="0,0,0,6">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Type}"
+                                                                         Value="{x:Static models:ActionType.MouseFollowPath}">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Style="{StaticResource LabelStyle}">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding StringFormat="Caminho: {0} ponto(s)">
+                                                            <Binding Path="PathPoints.Count"/>
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                                    <Button Content="⏺ Gravar caminho"
+                                                            Style="{StaticResource AccentButtonStyle}"
+                                                            Margin="0,0,6,0"
+                                                            Command="{Binding DataContext.RequestPathRecordingCommand,
+                                                                RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <Button Content="Limpar"
+                                                            Style="{StaticResource BaseButtonStyle}"
+                                                            Command="{Binding DataContext.ClearPathCommand,
+                                                                RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"/>
+                                                </StackPanel>
+                                                <CheckBox Content="Clique esquerdo ao final do caminho"
+                                                          IsChecked="{Binding PathLeftClickAtEnd}"
+                                                          Margin="0,0,0,4"/>
+                                                <TextBlock Text="Delay entre pontos (ms)"
+                                                           Style="{StaticResource LabelStyle}"/>
+                                                <TextBox Text="{Binding PathStepDelayMs,
+                                                             UpdateSourceTrigger=PropertyChanged}"
+                                                         Width="80" HorizontalAlignment="Left"/>
+                                            </StackPanel>
                                             <!-- Key field (keyboard actions) -->
                                             <TextBox
                                                 Text="{Binding KeyCode,

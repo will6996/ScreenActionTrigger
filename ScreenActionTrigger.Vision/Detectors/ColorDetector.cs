@@ -16,7 +16,12 @@ public sealed class ColorDetector
     {
         try
         {
-            var target = ColorTranslator.FromHtml(condition.TargetColor);
+            var targets = condition.GetAllTargetColors()
+                .Select(c => ColorTranslator.FromHtml(c))
+                .ToList();
+
+            if (targets.Count == 0)
+                return DetectionResult.NoMatch(region.Id, ConditionType.ColorDetection);
 
             using var ms = new MemoryStream(frameData);
             using var bmp = new Bitmap(ms);
@@ -39,9 +44,10 @@ public sealed class ColorDetector
                     byte g = ptr[i * 4 + 1];
                     byte r = ptr[i * 4 + 2];
 
-                    if (Math.Abs(r - target.R) <= condition.ColorTolerance &&
-                        Math.Abs(g - target.G) <= condition.ColorTolerance &&
-                        Math.Abs(b - target.B) <= condition.ColorTolerance)
+                    if (targets.Any(t =>
+                            Math.Abs(r - t.R) <= condition.ColorTolerance &&
+                            Math.Abs(g - t.G) <= condition.ColorTolerance &&
+                            Math.Abs(b - t.B) <= condition.ColorTolerance))
                     {
                         matchCount++;
                     }

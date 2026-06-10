@@ -71,13 +71,13 @@ public sealed partial class MonitoringViewModel : ObservableObject
         await File.WriteAllLinesAsync(dlg.FileName, lines);
     }
 
-    private static string Esc(string? s) => s is null ? "" : $""{s.Replace(""", """")}"";
+    private static string Esc(string? s) => s is null ? "" : $"\"{s.Replace("\"", "\"\"")}\"";
 
     public IEnumerable<MonitoringEntry> FilteredEntries => Entries.Where(e =>
         (!ShowOnlyExecuted || e.WasExecuted) &&
         (string.IsNullOrEmpty(FilterRegion) ||
          e.RegionName.Contains(FilterRegion, StringComparison.OrdinalIgnoreCase)));
 
-    partial void OnFilterRegionChanged(string v)    => OnPropertyChanged(nameof(FilteredEntries));
-    partial void OnShowOnlyExecutedChanged(bool v)  => OnPropertyChanged(nameof(FilteredEntries));
+    partial void OnFilterRegionChanged(string value)    => OnPropertyChanged(nameof(FilteredEntries));
+    partial void OnShowOnlyExecutedChanged(bool value)  => OnPropertyChanged(nameof(FilteredEntries));
 }

@@ -8,10 +8,9 @@
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>ScreenActionTrigger.UI</RootNamespace>
-    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
     <AssemblyTitle>Screen Action Trigger</AssemblyTitle>
     <Product>Screen Action Trigger</Product>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <!-- ═══════════════════════════════════════════════════════

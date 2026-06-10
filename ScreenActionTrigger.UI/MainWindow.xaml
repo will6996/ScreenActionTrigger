@@ -65,7 +65,7 @@
                     <Button Content="□" Style="{StaticResource GhostButtonStyle}"
                             Width="36" FontSize="12"
                             Click="MaximizeButton_Click"/>
-                    <Button Content="✕" Style="{StaticResource GhostButtonStyle}"
+                    <Button Content="✕"
                             Width="36" FontSize="13"
                             Click="CloseButton_Click">
                         <Button.Style>
