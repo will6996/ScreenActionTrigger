@@ -1,8 +1,8 @@
 {
-  "version":      "1.1.20",
-  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.20/ScreenActionTrigger.exe",
-  "releaseNotes": "- Ícone personalizado embutido no executável\n- Ícone na barra de tarefas e na janela do app",
+  "version":      "1.1.21",
+  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.21/ScreenActionTrigger.exe",
+  "releaseNotes": "- Ícone corrigido: proporções mais largas e equilibradas",
   "mandatory":    false,
-  "fileSize":     113438081,
+  "fileSize":     113511034,
   "releasedAt":   "2026-06-10T00:00:00Z"
 }
