@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Controls;
 using ScreenActionTrigger.Core.Models;
 using ScreenActionTrigger.UI.Controls;
@@ -14,6 +15,40 @@ public partial class SequencesView : UserControl
     {
         InitializeComponent();
         DataContextChanged += (_, _) => WireViewModel();
+    }
+
+    private void SequenceContextMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is not ContextMenu menu) return;
+
+            _vm ??= DataContext as SequencesViewModel;
+            if (_vm is null) return;
+
+            var sequence = ResolveContextSequence(menu);
+            if (sequence is not null)
+                _vm.SelectedSequence = sequence;
+
+            menu.DataContext = _vm;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"SequenceContextMenu: {ex}");
+            if (sender is ContextMenu m)
+                m.IsOpen = false;
+        }
+    }
+
+    private static RuleSequence? ResolveContextSequence(ContextMenu menu)
+    {
+        if (menu.PlacementTarget is ListViewItem lvi)
+            return lvi.DataContext as RuleSequence;
+
+        if (menu.PlacementTarget is ListView list)
+            return list.SelectedItem as RuleSequence;
+
+        return null;
     }
 
     private void WireViewModel()

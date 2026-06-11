@@ -19,6 +19,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" Text="SEQUÊNCIAS" Style="{StaticResource SectionTitleStyle}"/>
@@ -44,7 +45,33 @@
                         </StackPanel>
                     </DataTemplate>
                 </ListView.ItemTemplate>
+                <ListView.ContextMenu>
+                    <ContextMenu Style="{StaticResource DarkContextMenuStyle}"
+                                 Opened="SequenceContextMenu_Opened">
+                        <MenuItem Header="Duplicar"
+                                  Style="{StaticResource DarkContextMenuItemStyle}"
+                                  Command="{Binding DuplicateSequenceCommand}"
+                                  CommandParameter="{Binding SelectedSequence}"/>
+                        <Separator Style="{StaticResource DarkContextMenuSeparatorStyle}"/>
+                        <MenuItem Header="Remover"
+                                  Style="{StaticResource DarkContextMenuItemStyle}"
+                                  Foreground="{StaticResource AccentErrorBrush}"
+                                  Command="{Binding RemoveSequenceCommand}"
+                                  CommandParameter="{Binding SelectedSequence}"/>
+                    </ContextMenu>
+                </ListView.ContextMenu>
             </ListView>
+            <UniformGrid Grid.Row="3" Columns="2" Margin="0,8,0,0">
+                <Button Content="Duplicar" Style="{StaticResource BaseButtonStyle}"
+                        Command="{Binding DuplicateSequenceCommand}"
+                        CommandParameter="{Binding SelectedSequence}"
+                        Margin="0,0,3,0"
+                        IsEnabled="{Binding SelectedSequence, Converter={StaticResource NotNullToBoolConverter}}"/>
+                <Button Content="🗑" Style="{StaticResource DangerButtonStyle}"
+                        Command="{Binding RemoveSequenceCommand}"
+                        CommandParameter="{Binding SelectedSequence}"
+                        IsEnabled="{Binding SelectedSequence, Converter={StaticResource NotNullToBoolConverter}}"/>
+            </UniformGrid>
         </Grid>
 
         <GridSplitter Grid.Column="1" Width="6"/>
@@ -93,7 +120,9 @@
                         Command="{Binding MoveStepDownCommand}" CommandParameter="{Binding SelectedStep}"
                         Margin="0,0,4,0"/>
                 <Button Content="🗑" Style="{StaticResource DangerButtonStyle}"
-                        Command="{Binding RemoveStepCommand}" CommandParameter="{Binding SelectedStep}"/>
+                        Command="{Binding RemoveStepCommand}"
+                        CommandParameter="{Binding SelectedStep}"
+                        IsEnabled="{Binding SelectedStep, Converter={StaticResource NotNullToBoolConverter}}"/>
             </StackPanel>
         </Grid>
 

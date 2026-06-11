@@ -1,8 +1,8 @@
 {
-  "version":      "1.1.21",
-  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.21/ScreenActionTrigger.exe",
-  "releaseNotes": "- Ícone corrigido: proporções mais largas e equilibradas",
+  "version":      "1.1.22",
+  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.22/ScreenActionTrigger.exe",
+  "releaseNotes": "- Ícone redesenhado com proporções corretas (sem barras pretas)\n- Botão para excluir sequências na aba Sequências\n- Menu de contexto (clique direito) em sequências",
   "mandatory":    false,
-  "fileSize":     113511034,
+  "fileSize":     113282899,
   "releasedAt":   "2026-06-10T00:00:00Z"
 }
