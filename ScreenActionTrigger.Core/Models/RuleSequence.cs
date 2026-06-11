@@ -13,7 +13,7 @@ public sealed class RuleSequence
     public bool Loop { get; set; } = true;
     /// <summary>Pausa mínima entre passos (ms).</summary>
     public int DelayBetweenStepsMs { get; set; } = 300;
-    public List<SequenceStep> Steps { get; set; } = new();
+    public ObservableCollection<SequenceStep> Steps { get; set; } = new();
 
     public IEnumerable<SequenceStep> OrderedSteps =>
         Steps.OrderBy(s => s.Order);
@@ -26,7 +26,7 @@ public sealed class RuleSequence
         IsEnabled = IsEnabled,
         Loop = Loop,
         DelayBetweenStepsMs = DelayBetweenStepsMs,
-        Steps = Steps.Select(s => s.Clone()).ToList()
+        Steps = new ObservableCollection<SequenceStep>(Steps.Select(s => s.Clone()))
     };
 }
 

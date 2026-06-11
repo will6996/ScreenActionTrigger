@@ -82,6 +82,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" Text="PASSOS" Style="{StaticResource SectionTitleStyle}"/>
@@ -89,7 +90,7 @@
                     Command="{Binding AddStepCommand}" Margin="0,0,0,8"
                     IsEnabled="{Binding SelectedSequence, Converter={StaticResource NotNullToBoolConverter}}"/>
             <ListView Grid.Row="2" ItemsSource="{Binding SelectedSequence.Steps}"
-                      SelectedItem="{Binding SelectedStep}">
+                      SelectedItem="{Binding SelectedStep}" Margin="0,0,0,4">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
@@ -112,7 +113,7 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-            <StackPanel Grid.Row="2" VerticalAlignment="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
+            <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,4,0,0">
                 <Button Content="▲" Width="32" Style="{StaticResource BaseButtonStyle}"
                         Command="{Binding MoveStepUpCommand}" CommandParameter="{Binding SelectedStep}"
                         Margin="0,0,4,0"/>
@@ -136,7 +137,8 @@
             </Grid.ColumnDefinitions>
 
             <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto"
-                          Margin="0,0,8,0">
+                          HorizontalScrollBarVisibility="Disabled"
+                          Margin="0,0,4,0" Padding="0,0,2,8">
             <StackPanel>
                 <StackPanel.Style>
                     <Style TargetType="StackPanel">

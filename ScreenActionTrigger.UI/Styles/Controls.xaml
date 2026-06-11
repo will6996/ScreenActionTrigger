@@ -323,10 +323,48 @@
         </Setter>
     </Style>
 
-    <!-- ScrollBar (thin) -->
+    <!-- ScrollViewer — sem menu de contexto do sistema (evita popup branco) -->
+    <Style TargetType="ScrollViewer">
+        <Setter Property="ContextMenu" Value="{x:Null}"/>
+        <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="Padding" Value="0,0,2,0"/>
+    </Style>
+
+    <!-- ScrollBar (fina, tema escuro) -->
     <Style TargetType="ScrollBar">
-        <Setter Property="Width"      Value="6"/>
+        <Setter Property="Width"      Value="8"/>
+        <Setter Property="MinWidth"   Value="8"/>
         <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="ContextMenu" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Grid Background="Transparent">
+                        <Track x:Name="PART_Track" IsDirectionReversed="True">
+                            <Track.Thumb>
+                                <Thumb>
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Border Background="{StaticResource BgBorderBrush}"
+                                                    CornerRadius="4" Margin="1,2"/>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Width" Value="Auto"/>
+                <Setter Property="MinWidth" Value="0"/>
+                <Setter Property="Height" Value="8"/>
+                <Setter Property="MinHeight" Value="8"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <!-- GridSplitter -->

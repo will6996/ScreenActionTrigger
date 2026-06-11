@@ -396,14 +396,33 @@ public sealed partial class SequencesViewModel : ObservableObject
 
     private static void ReindexSteps(RuleSequence sequence)
     {
-        sequence.Steps.Sort((a, b) => a.Order.CompareTo(b.Order));
-        for (var i = 0; i < sequence.Steps.Count; i++)
+        var ordered = sequence.Steps.OrderBy(s => s.Order).ToList();
+        for (var i = 0; i < ordered.Count; i++)
         {
-            sequence.Steps[i].Order = i;
-            sequence.Steps[i].Name = string.IsNullOrWhiteSpace(sequence.Steps[i].Name)
-                                     || sequence.Steps[i].Name.StartsWith("Passo ")
+            ordered[i].Order = i;
+            ordered[i].Name = string.IsNullOrWhiteSpace(ordered[i].Name)
+                                     || ordered[i].Name.StartsWith("Passo ")
                 ? $"Passo {i + 1}"
-                : sequence.Steps[i].Name;
+                : ordered[i].Name;
         }
+
+        var needsRebuild = ordered.Count != sequence.Steps.Count;
+        if (!needsRebuild)
+        {
+            for (var i = 0; i < ordered.Count; i++)
+            {
+                if (!ReferenceEquals(sequence.Steps[i], ordered[i]))
+                {
+                    needsRebuild = true;
+                    break;
+                }
+            }
+        }
+
+        if (!needsRebuild) return;
+
+        sequence.Steps.Clear();
+        foreach (var step in ordered)
+            sequence.Steps.Add(step);
     }
 }

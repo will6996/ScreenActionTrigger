@@ -44,6 +44,12 @@ public static class ProfileRepair
 
     public static void EnsureSequenceCollections(RuleSequence sequence)
     {
+        if (sequence.Steps is not ObservableCollection<SequenceStep>)
+        {
+            sequence.Steps = new ObservableCollection<SequenceStep>(
+                sequence.Steps ?? []);
+        }
+
         foreach (var step in sequence.Steps)
         {
             if (step.Condition.TargetColors is not ObservableCollection<string>)
