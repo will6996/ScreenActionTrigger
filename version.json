@@ -1,8 +1,8 @@
 {
-  "version":      "1.1.23",
-  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.23/ScreenActionTrigger.exe",
-  "releaseNotes": "- Corrigido: menu branco ao clicar na barra de rolagem\n- Corrigido: barra de rolagem fina no tema escuro\n- Corrigido: impossível adicionar mais de um passo na sequência\n- Corrigido: botões dos passos cobrindo a lista",
+  "version":      "1.1.24",
+  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.24/ScreenActionTrigger.exe",
+  "releaseNotes": "- Ícone redesenhado em 256×256 pixels, preenchimento total sem barras laterais",
   "mandatory":    false,
-  "fileSize":     113280992,
+  "fileSize":     113284170,
   "releasedAt":   "2026-06-10T00:00:00Z"
 }

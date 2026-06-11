@@ -11,7 +11,7 @@
     <AssemblyName>ScreenActionTrigger</AssemblyName>
     <AssemblyTitle>Screen Action Trigger</AssemblyTitle>
     <Product>Screen Action Trigger</Product>
-    <Version>1.1.23</Version>
+    <Version>1.1.24</Version>
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
