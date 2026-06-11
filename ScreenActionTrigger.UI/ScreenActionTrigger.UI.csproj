@@ -8,9 +8,10 @@
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>ScreenActionTrigger.UI</RootNamespace>
+    <AssemblyName>ScreenActionTrigger</AssemblyName>
     <AssemblyTitle>Screen Action Trigger</AssemblyTitle>
     <Product>Screen Action Trigger</Product>
-    <Version>1.1.18</Version>
+    <Version>1.1.19</Version>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 

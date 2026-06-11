@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using ScreenActionTrigger.Core.Interfaces;
 using ScreenActionTrigger.Core.Models;
+using ScreenActionTrigger.UI.Services;
 
 namespace ScreenActionTrigger.UI.ViewModels;
 
@@ -31,10 +32,9 @@ public sealed partial class UpdateViewModel : ObservableObject
         CurrentVersion   = updater.CurrentVersion.ToString(3);
     }
 
-    // ── Verificação automática (chamada no startup) ──────────────────────────
     public async Task CheckOnStartupAsync()
     {
-        await Task.Delay(5_000); // aguarda 5s após o app abrir
+        await Task.Delay(5_000);
         await CheckForUpdatesAsync();
     }
 
@@ -50,7 +50,7 @@ public sealed partial class UpdateViewModel : ObservableObject
 
             if (info is null)
             {
-                UpdateMessage = "Não foi possível verificar atualizações.";
+                UpdateMessage = "Não foi possível verificar atualizações. Verifique sua conexão.";
                 return;
             }
 
@@ -58,14 +58,14 @@ public sealed partial class UpdateViewModel : ObservableObject
 
             if (!info.IsUpdateAvailable)
             {
-                UpdateMessage   = $"Você está na versão mais recente ({CurrentVersion}).";
+                UpdateMessage   = $"Você está na versão mais recente (v{CurrentVersion}).";
                 UpdateAvailable = false;
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(info.DownloadUrl))
             {
-                UpdateMessage   = $"v{info.LatestVersion} disponível, mas o link de download não foi encontrado.";
+                UpdateMessage   = $"v{info.LatestVersion} disponível, mas o instalador não foi encontrado no GitHub Releases.";
                 UpdateAvailable = false;
                 return;
             }
@@ -75,14 +75,14 @@ public sealed partial class UpdateViewModel : ObservableObject
             IsMandatory     = info.IsMandatory;
             ReleaseNotes    = info.ReleaseNotes;
             UpdateMessage   = info.IsMandatory
-                ? $"Atualização obrigatória disponível: v{info.LatestVersion} ({info.FileSizeFormatted})"
+                ? $"Atualização obrigatória: v{info.LatestVersion} ({info.FileSizeFormatted})"
                 : $"Nova versão disponível: v{info.LatestVersion} ({info.FileSizeFormatted})";
 
             _logger.LogInformation("Atualização disponível: v{V}", info.LatestVersion);
         }
         catch (Exception ex)
         {
-            UpdateMessage = "Erro ao verificar atualizações.";
+            UpdateMessage = $"Erro ao verificar atualizações: {ex.Message}";
             _logger.LogError(ex, "Erro ao verificar atualizações");
         }
         finally
@@ -107,12 +107,14 @@ public sealed partial class UpdateViewModel : ObservableObject
                 DownloadProgress = p.pct;
                 var dlMb    = p.dl    / 1_048_576.0;
                 var totalMb = p.total / 1_048_576.0;
-                DownloadStatus = $"Baixando... {dlMb:F1} MB / {totalMb:F1} MB ({p.pct:F0}%)";
+                DownloadStatus = totalMb > 0
+                    ? $"Baixando... {dlMb:F1} MB / {totalMb:F1} MB ({p.pct:F0}%)"
+                    : $"Baixando... {dlMb:F1} MB ({p.pct:F0}%)";
             });
 
             var exePath = await _updater.DownloadAsync(_pendingUpdate, progress);
 
-            DownloadStatus   = "Download concluído. Aplicando atualização...";
+            DownloadStatus   = "Download concluído. Preparando instalação...";
             DownloadProgress = 100;
 
             var result = MessageBox.Show(
@@ -132,7 +134,8 @@ public sealed partial class UpdateViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            DownloadStatus = $"Erro no download: {ex.Message}";
+            DownloadStatus = $"Erro: {ex.Message}";
+            UpdateMessage  = $"Falha ao baixar/atualizar. Log: {UpdateService.UpdaterLogPath}";
             _logger.LogError(ex, "Erro ao baixar atualização");
         }
         finally
@@ -144,7 +147,7 @@ public sealed partial class UpdateViewModel : ObservableObject
     [RelayCommand]
     private void DismissUpdate()
     {
-        if (IsMandatory) return; // atualização obrigatória não pode ser ignorada
+        if (IsMandatory) return;
         UpdateAvailable = false;
         UpdateMessage   = $"Atualização v{LatestVersion} adiada.";
     }

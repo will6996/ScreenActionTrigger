@@ -165,50 +165,24 @@
                 </StackPanel>
             </Border>
 
-            <!-- Instruções de configuração -->
+            <!-- Informações -->
             <Border Background="{StaticResource BgCardBrush}" CornerRadius="8"
                     Padding="16" Margin="0,12,0,0"
                     BorderBrush="{StaticResource BgBorderBrush}" BorderThickness="1">
                 <StackPanel>
-                    <TextBlock Text="Como configurar o servidor de atualização"
+                    <TextBlock Text="Sobre as atualizações"
                                Style="{StaticResource SectionTitleStyle}"/>
                     <TextBlock TextWrapping="Wrap" FontSize="11"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                LineHeight="20">
-                        <Run Text="1. Hospede um arquivo "/>
-                        <Run Text="version.json" FontWeight="Bold"
+                        <Run Text="O Screen Action Trigger roda como um único arquivo "/>
+                        <Run Text="ScreenActionTrigger.exe" FontFamily="Consolas"
                              Foreground="{StaticResource AccentPrimaryBrush}"/>
-                        <Run Text=" em qualquer URL pública (GitHub Pages, GitHub raw, etc.)."/>
+                        <Run Text=" — sem pastas ou DLLs extras. Perfis e templates ficam em %APPDATA%\ScreenActionTrigger."/>
                         <LineBreak/>
-                        <Run Text="2. Configure a URL em "/>
-                        <Run Text="UpdateService.VersionManifestUrl" FontFamily="Consolas"
-                             Foreground="{StaticResource AccentPrimaryBrush}"/>
-                        <Run Text=" no código."/>
                         <LineBreak/>
-                        <Run Text="3. Para lançar uma atualização: compile com "/>
-                        <Run Text=".\build.ps1 -publish sc" FontFamily="Consolas"
-                             Foreground="{StaticResource AccentPrimaryBrush}"/>
-                        <Run Text=", suba o .exe e atualize o version.json."/>
+                        <Run Text="As atualizações são baixadas do GitHub Releases e aplicadas automaticamente ao clicar em Baixar e Instalar."/>
                     </TextBlock>
-
-                    <!-- Exemplo de version.json -->
-                    <TextBlock Text="Exemplo de version.json:"
-                               Style="{StaticResource LabelStyle}" Margin="0,12,0,4"/>
-                    <Border Background="{StaticResource BgDeepBrush}"
-                            CornerRadius="4" Padding="12">
-                        <TextBlock FontFamily="Consolas" FontSize="11"
-                                   Foreground="{StaticResource AccentSuccessBrush}"
-                                   TextWrapping="Wrap">
-<![CDATA[{
-  "version":      "1.1.0",
-  "downloadUrl":  "https://github.com/SEU_USUARIO/SAT/releases/download/v1.1.0/ScreenActionTrigger.UI.exe",
-  "releaseNotes": "- Melhorias de performance\n- Novo detector de mudança",
-  "mandatory":    false,
-  "fileSize":     165000000,
-  "releasedAt":   "2025-06-10T12:00:00Z"
-}]]>
-                        </TextBlock>
-                    </Border>
                 </StackPanel>
             </Border>
 

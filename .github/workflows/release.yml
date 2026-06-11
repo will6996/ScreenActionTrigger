@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run tests
+        run: dotnet test ScreenActionTrigger.Tests/ScreenActionTrigger.Tests.csproj -c Release --nologo --logger "console;verbosity=minimal"
+
+      - name: Publish single-file (self-contained)
+        run: dotnet publish ScreenActionTrigger.UI/ScreenActionTrigger.UI.csproj -c Release -p:PublishProfile=SingleFile_SelfContained --nologo
+
+      - name: Prepare version.json
+        shell: pwsh
+        run: |
+          $tag  = "${{ github.ref_name }}".TrimStart('v')
+          $exe  = Get-Item "publish/self-contained/ScreenActionTrigger.exe"
+          $json = [ordered]@{
+            version      = $tag
+            downloadUrl  = "https://github.com/will6996/ScreenActionTrigger/releases/download/${{ github.ref_name }}/ScreenActionTrigger.exe"
+            releaseNotes = "Release v$tag"
+            mandatory    = $false
+            fileSize     = $exe.Length
+            releasedAt   = (Get-Date).ToUniversalTime().ToString("o")
+          }
+          $json | ConvertTo-Json | Set-Content version.json -Encoding UTF8
+          Copy-Item version.json version.json.release -Force
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            publish/self-contained/ScreenActionTrigger.exe
+            version.json
+          generate_release_notes: true
+
+      - name: Push version.json to main
+        shell: pwsh
+        run: |
+          git fetch origin main
+          git checkout main
+          git pull origin main
+          Copy-Item version.json.release version.json -Force
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add version.json
+          git diff --staged --quiet || git commit -m "chore: update version.json for ${{ github.ref_name }}"
+          git push origin main

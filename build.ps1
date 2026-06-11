@@ -52,13 +52,21 @@ if ($publish -eq "fd") {
 dotnet publish $UI -c Release -p:PublishProfile=$profile --nologo
 if ($LASTEXITCODE -ne 0) { Write-Error "Publicação falhou"; exit 1 }
 
-$exe  = Join-Path $outDir "ScreenActionTrigger.UI.exe"
+$exe  = Join-Path $outDir "ScreenActionTrigger.exe"
+$legacy = Join-Path $outDir "ScreenActionTrigger.UI.exe"
+if (-not (Test-Path $exe) -and (Test-Path $legacy)) { $exe = $legacy }
+
+# Copia só o executável para dist/ (sem PDBs)
+$distDir = "dist"
+New-Item -ItemType Directory -Force -Path $distDir | Out-Null
+Copy-Item $exe (Join-Path $distDir "ScreenActionTrigger.exe") -Force
 $size = if (Test-Path $exe) {
     "{0:N1} MB" -f ((Get-Item $exe).Length / 1MB)
 } else { "?" }
 
 Write-Host ""
 Write-Host "  ✓ Publicado em : $outDir" -ForegroundColor Green
+Write-Host "  ✓ Copiado para  : dist\ScreenActionTrigger.exe" -ForegroundColor Green
 Write-Host "  ✓ Tamanho exe  : $size"   -ForegroundColor Green
 Write-Host "  ✓ Nota         : $note"   -ForegroundColor DarkCyan
 Write-Host ""

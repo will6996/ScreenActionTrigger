@@ -21,15 +21,40 @@ Screen Action Trigger monitora regiões da tela em tempo real, detecta padrões 
 ## Compilação
 
 ```bash
-# Restaurar pacotes e compilar
+# Restaurar pacotes e compilar (desenvolvimento)
 dotnet restore
 dotnet build -c Release
 
-# Executar
+# Executar em modo dev
 dotnet run --project ScreenActionTrigger.UI -c Release
 
 # Testes
 dotnet test ScreenActionTrigger.Tests -c Release --logger "console;verbosity=detailed"
+```
+
+## Distribuição (executável único)
+
+Para gerar **um único `.exe`** que roda sem pastas, DLLs ou runtime instalado:
+
+```powershell
+.\build.ps1 -publish sc
+```
+
+Saída: `publish\self-contained\ScreenActionTrigger.exe` (~165 MB)
+
+Copie esse arquivo para a Área de Trabalho e crie um atalho — pronto.
+
+Perfis, templates e logs ficam em `%APPDATA%\ScreenActionTrigger\` (não ao lado do `.exe`).
+
+## Atualizações automáticas
+
+O app verifica novas versões no GitHub Releases (aba **Atualizações**).
+Para publicar uma nova versão:
+
+```powershell
+# 1. Atualize <Version> no ScreenActionTrigger.UI.csproj
+# 2. Execute:
+.\release.ps1 -Notes "Descrição das mudanças"
 ```
 
 ---
