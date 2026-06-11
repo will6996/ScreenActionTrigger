@@ -1,8 +1,8 @@
 {
-  "version":      "1.1.19",
-  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.19/ScreenActionTrigger.exe",
-  "releaseNotes": "- App roda como único executável (sem pastas ou DLLs)\n- Atualização automática corrigida\n- Sequências com ramificação if/else\n- Contagem de slots no inventário\n- Painel de sequência recolhível",
+  "version":      "1.1.20",
+  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.20/ScreenActionTrigger.exe",
+  "releaseNotes": "- Ícone personalizado embutido no executável\n- Ícone na barra de tarefas e na janela do app",
   "mandatory":    false,
-  "fileSize":     113258536,
+  "fileSize":     113438081,
   "releasedAt":   "2026-06-10T00:00:00Z"
 }

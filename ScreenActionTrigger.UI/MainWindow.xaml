@@ -5,6 +5,7 @@
         xmlns:conv="clr-namespace:ScreenActionTrigger.UI.Converters"
         Title="{Binding Title}" Height="720" Width="1280"
         MinHeight="600" MinWidth="900"
+        Icon="Assets/AppIcon.ico"
         Background="{StaticResource BgDeepBrush}"
         WindowStartupLocation="CenterScreen"
         PreviewKeyDown="Window_PreviewKeyDown">

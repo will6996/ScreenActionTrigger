@@ -11,7 +11,8 @@
     <AssemblyName>ScreenActionTrigger</AssemblyName>
     <AssemblyTitle>Screen Action Trigger</AssemblyTitle>
     <Product>Screen Action Trigger</Product>
-    <Version>1.1.19</Version>
+    <Version>1.1.20</Version>
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 
@@ -31,6 +32,9 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\AppIcon.ico" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ScreenActionTrigger.Core\ScreenActionTrigger.Core.csproj" />
