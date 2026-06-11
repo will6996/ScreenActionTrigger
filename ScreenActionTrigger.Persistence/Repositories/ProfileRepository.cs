@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using ScreenActionTrigger.Core;
 using ScreenActionTrigger.Core.Interfaces;
 using ScreenActionTrigger.Core.Models;
 using ScreenActionTrigger.Persistence.Serializers;
@@ -27,12 +28,13 @@ public sealed class ProfileRepository : IProfileManager
 
             await using var stream = File.OpenRead(path);
             var profile = await JsonProfileSerializer.DeserializeAsync(stream);
-            if (profile is not null)
-            {
-                CurrentProfile = profile;
-                AddRecentPath(path);
-                _logger.LogInformation("Profile '{Name}' loaded from {Path}", profile.Name, path);
-            }
+            if (profile is null)
+                return null;
+
+            ProfileRepair.RepairProfile(profile);
+            CurrentProfile = profile;
+            AddRecentPath(path);
+            _logger.LogInformation("Profile '{Name}' loaded from {Path}", profile.Name, path);
             return profile;
         }
         catch (Exception ex)
@@ -47,10 +49,25 @@ public sealed class ProfileRepository : IProfileManager
         try
         {
             profile.UpdatedAt = DateTime.UtcNow;
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            var directory = Path.GetDirectoryName(path)!;
+            Directory.CreateDirectory(directory);
 
-            await using var stream = File.Create(path);
-            await JsonProfileSerializer.SerializeAsync(profile, stream);
+            if (File.Exists(path))
+            {
+                var backupPath = path + ".bak";
+                File.Copy(path, backupPath, overwrite: true);
+            }
+
+            var tempPath = path + ".tmp";
+            await using (var stream = File.Create(tempPath))
+            {
+                await JsonProfileSerializer.SerializeAsync(profile, stream);
+            }
+
+            if (File.Exists(path))
+                File.Replace(tempPath, path, destinationBackupFileName: null);
+            else
+                File.Move(tempPath, path);
 
             CurrentProfile = profile;
             AddRecentPath(path);
@@ -65,15 +82,12 @@ public sealed class ProfileRepository : IProfileManager
 
     public async Task<string> ExportAsync(ExecutionProfile profile, string destinationPath)
     {
-        // Export includes templates as base64 embedded data
         await SaveAsync(profile, destinationPath);
         return destinationPath;
     }
 
     public async Task<ExecutionProfile?> ImportAsync(string sourcePath)
-    {
-        return await LoadAsync(sourcePath);
-    }
+        => await LoadAsync(sourcePath);
 
     public ExecutionProfile CreateNew(string name = "Novo Perfil") => new()
     {

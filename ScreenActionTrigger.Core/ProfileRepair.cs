@@ -5,6 +5,18 @@ namespace ScreenActionTrigger.Core;
 
 public static class ProfileRepair
 {
+    public static void RepairProfile(ExecutionProfile profile)
+    {
+        foreach (var rule in profile.Rules)
+            EnsureRuleCollections(rule);
+
+        foreach (var sequence in profile.Sequences)
+            EnsureSequenceCollections(sequence);
+
+        RepairRuleRegionLinks(profile.Rules, profile.Regions);
+        RepairSequenceRegionLinks(profile.Sequences, profile.Regions);
+    }
+
     /// <summary>Reassocia regras cuja RegionId ficou inválida após recriar regiões.</summary>
     public static void RepairRuleRegionLinks(IEnumerable<VisualRule> rules, IList<MonitoredRegion> regions)
     {

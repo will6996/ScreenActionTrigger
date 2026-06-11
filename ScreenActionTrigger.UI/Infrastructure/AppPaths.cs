@@ -24,6 +24,10 @@ public static class AppPaths
     public static string AutoSaveProfilePath { get; } =
         Path.Combine(ProfilesDir, "autosave.satprofile");
 
+    /// <summary>Cópia de segurança do autosave (antes de cada gravação)</summary>
+    public static string AutoSaveBackupPath { get; } =
+        Path.Combine(ProfilesDir, "autosave.satprofile.bak");
+
     /// <summary>Pasta de imagens de templates</summary>
     public static string TemplatesDir { get; } = Path.Combine(DataRoot, "Templates");
 

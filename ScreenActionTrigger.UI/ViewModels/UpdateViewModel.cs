@@ -12,6 +12,7 @@ public sealed partial class UpdateViewModel : ObservableObject
 {
     private readonly IUpdateService        _updater;
     private readonly ILogger<UpdateViewModel> _logger;
+    private readonly Func<Task> _saveSessionBeforeUpdate;
     private UpdateInfo? _pendingUpdate;
 
     [ObservableProperty] private bool   _updateAvailable;
@@ -25,11 +26,15 @@ public sealed partial class UpdateViewModel : ObservableObject
     [ObservableProperty] private string _latestVersion    = string.Empty;
     [ObservableProperty] private bool   _isMandatory;
 
-    public UpdateViewModel(IUpdateService updater, ILogger<UpdateViewModel> logger)
+    public UpdateViewModel(
+        IUpdateService updater,
+        ILogger<UpdateViewModel> logger,
+        Func<Task> saveSessionBeforeUpdate)
     {
-        _updater         = updater;
-        _logger          = logger;
-        CurrentVersion   = updater.CurrentVersion.ToString(3);
+        _updater                  = updater;
+        _logger                   = logger;
+        _saveSessionBeforeUpdate  = saveSessionBeforeUpdate;
+        CurrentVersion            = updater.CurrentVersion.ToString(3);
     }
 
     public async Task CheckOnStartupAsync()
@@ -126,7 +131,11 @@ public sealed partial class UpdateViewModel : ObservableObject
                 MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
+            {
+                DownloadStatus = "Salvando configurações antes de atualizar...";
+                await _saveSessionBeforeUpdate();
                 _updater.ApplyAndRestart(exePath);
+            }
         }
         catch (OperationCanceledException)
         {

@@ -89,7 +89,10 @@ public partial class App : Application
         services.AddSingleton<GlobalHotkeyService>();
 
         // ViewModels
-        services.AddSingleton<UpdateViewModel>();
+        services.AddSingleton<UpdateViewModel>(sp => new UpdateViewModel(
+            sp.GetRequiredService<IUpdateService>(),
+            sp.GetRequiredService<ILogger<UpdateViewModel>>(),
+            () => sp.GetRequiredService<MainViewModel>().SaveAutoSaveAsync()));
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<RegionsViewModel>();
         services.AddSingleton<RulesViewModel>();

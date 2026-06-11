@@ -1,8 +1,8 @@
 {
-  "version":      "1.1.24",
-  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.24/ScreenActionTrigger.exe",
-  "releaseNotes": "- Ícone redesenhado em 256×256 pixels, preenchimento total sem barras laterais",
+  "version":      "1.1.25",
+  "downloadUrl":  "https://github.com/will6996/ScreenActionTrigger/releases/download/v1.1.25/ScreenActionTrigger.exe",
+  "releaseNotes": "- Ícone corrigido: formato ICO BMP compatível com Windows (sem barras laterais)\n- Saves protegidos: backup automático, gravação atômica e salvamento antes de atualizar\n- Restauração do backup se o autosave principal estiver corrompido",
   "mandatory":    false,
-  "fileSize":     113284170,
-  "releasedAt":   "2026-06-10T00:00:00Z"
+  "fileSize":     113559208,
+  "releasedAt":   "2026-06-11T00:00:00Z"
 }

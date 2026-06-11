@@ -15,6 +15,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly IProfileManager    _profileManager;
     private readonly IOverlayService    _overlay;
     private readonly ILogger<MainViewModel> _logger;
+    private bool _autoSaveRestored;
 
     [ObservableProperty] private string _title = "Screen Action Trigger";
     [ObservableProperty] private string _statusText = "Pronto";
@@ -357,15 +358,30 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             var path = AppPaths.AutoSaveProfilePath;
-            if (!File.Exists(path))
+            if (!File.Exists(path) && !File.Exists(AppPaths.AutoSaveBackupPath))
                 return;
 
-            var loaded = await _profileManager.LoadAsync(path);
+            var loaded = File.Exists(path)
+                ? await _profileManager.LoadAsync(path)
+                : null;
+
+            if (loaded is null && File.Exists(AppPaths.AutoSaveBackupPath))
+            {
+                loaded = await _profileManager.LoadAsync(AppPaths.AutoSaveBackupPath);
+                if (loaded is not null)
+                    _logger.LogWarning("Auto-save principal corrompido — restaurado do backup");
+            }
+
             if (loaded is null)
+            {
+                _logger.LogError("Não foi possível restaurar o autosave (principal e backup)");
+                StatusText = "Não foi possível restaurar a sessão anterior — backup preservado";
                 return;
+            }
 
             Profile            = loaded;
             CurrentProfilePath = path;
+            _autoSaveRestored  = true;
             Title              = $"Screen Action Trigger — {Profile.Name}";
             StatusText         = "Sessão anterior restaurada";
             _logger.LogInformation("Auto-save profile loaded from {Path}", path);
@@ -373,6 +389,7 @@ public sealed partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load auto-save profile");
+            StatusText = "Erro ao restaurar sessão — configurações anteriores preservadas no backup";
         }
     }
 
@@ -381,8 +398,17 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             PushChangesToProfile();
+
             var path = AppPaths.AutoSaveProfilePath;
+            if (!_autoSaveRestored && IsDefaultEmptySession() && HasExistingAutoSaveData())
+            {
+                _logger.LogWarning(
+                    "Ignorando autosave vazio para não sobrescrever dados existentes em {Path}", path);
+                return;
+            }
+
             await _profileManager.SaveAsync(Profile, path).ConfigureAwait(false);
+            _autoSaveRestored = true;
             _logger.LogInformation("Auto-save profile saved to {Path}", path);
         }
         catch (Exception ex)
@@ -390,6 +416,34 @@ public sealed partial class MainViewModel : ObservableObject
             _logger.LogError(ex, "Failed to save auto-save profile");
         }
     }
+
+    private static bool HasExistingAutoSaveData()
+    {
+        foreach (var candidate in new[] { AppPaths.AutoSaveProfilePath, AppPaths.AutoSaveBackupPath })
+        {
+            if (!File.Exists(candidate))
+                continue;
+
+            try
+            {
+                var info = new FileInfo(candidate);
+                if (info.Length > 256)
+                    return true;
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsDefaultEmptySession()
+        => Profile.Regions.Count == 0
+           && Profile.Rules.Count == 0
+           && Profile.Sequences.Count == 0
+           && Profile.Templates.Count == 0;
 
     public async Task ShutdownAsync()
     {
