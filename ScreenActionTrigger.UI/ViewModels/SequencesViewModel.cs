@@ -23,12 +23,17 @@ public sealed partial class SequencesViewModel : ObservableObject
     [ObservableProperty] private SequenceStep?  _selectedStep;
     [ObservableProperty] private string         _filterText = string.Empty;
     [ObservableProperty] private bool           _showDisabled = true;
+    [ObservableProperty] private bool           _isSequencePanelExpanded = true;
+    [ObservableProperty] private MonitoredRegion? _pendingInventoryRegion;
     [ObservableProperty] private string         _newExtraColor = "#FF0000";
     [ObservableProperty] private string?        _extraColorError;
 
     public IEnumerable<MonitoredRegion> AvailableRegions   => _regionsVm.Regions;
     public IEnumerable<Template>        AvailableTemplates => _templatesVm.Templates;
     public IReadOnlyList<ColorPreset>   PresetColors       => ColorPresets.All;
+
+    public IEnumerable<SequenceStep> AvailableStepsForBranch =>
+        SelectedSequence?.OrderedSteps.Where(s => s.Id != SelectedStep?.Id) ?? Enumerable.Empty<SequenceStep>();
 
     public SequencesViewModel(
         RegionsViewModel regionsVm,
@@ -163,6 +168,80 @@ public sealed partial class SequencesViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void ToggleSequencePanel() => IsSequencePanelExpanded = !IsSequencePanelExpanded;
+
+    [RelayCommand]
+    private void AddBranchSlot()
+    {
+        if (SelectedStep is null) return;
+        SelectedStep.BranchSlots.Add(new SequenceBranchSlot
+        {
+            Label = $"Se {SelectedStep.BranchSlots.Count(s => !s.IsElse) + 1}",
+            Condition = new RuleCondition
+            {
+                Type = ConditionType.ColorDetection,
+                MinMatchingPixels = 8,
+                MinColorPercentage = 0.03,
+                ColorTolerance = 28,
+                ExcludeDarkPixels = true
+            }
+        });
+        SelectedStep.AdvanceMode = SequenceAdvanceMode.Branch;
+        NotifyStepChanged();
+    }
+
+    [RelayCommand]
+    private void AddElseBranchSlot()
+    {
+        if (SelectedStep is null) return;
+        if (SelectedStep.BranchSlots.Any(s => s.IsElse)) return;
+
+        SelectedStep.BranchSlots.Add(new SequenceBranchSlot
+        {
+            Label = "Senão",
+            IsElse = true
+        });
+        SelectedStep.AdvanceMode = SequenceAdvanceMode.Branch;
+        NotifyStepChanged();
+    }
+
+    [RelayCommand]
+    private void RemoveBranchSlot(SequenceBranchSlot? slot)
+    {
+        if (SelectedStep is null || slot is null) return;
+        SelectedStep.BranchSlots.Remove(slot);
+        if (SelectedStep.BranchSlots.Count == 0)
+            SelectedStep.AdvanceMode = SequenceAdvanceMode.Next;
+        NotifyStepChanged();
+    }
+
+    [RelayCommand]
+    private void AddInventorySlot(MonitoredRegion? region)
+    {
+        region ??= PendingInventoryRegion;
+        if (SelectedStep is null || region is null) return;
+        var ids = SelectedStep.Condition.InventorySlotRegionIds;
+        if (ids.Contains(region.Id)) return;
+        ids.Add(region.Id);
+        PendingInventoryRegion = null;
+        NotifyStepChanged();
+    }
+
+    [RelayCommand]
+    private void RemoveInventorySlot(Guid regionId)
+    {
+        if (SelectedStep is null) return;
+        SelectedStep.Condition.InventorySlotRegionIds.Remove(regionId);
+        NotifyStepChanged();
+    }
+
+    private void NotifyStepChanged()
+    {
+        OnPropertyChanged(nameof(SelectedStep));
+        OnPropertyChanged(nameof(AvailableStepsForBranch));
+    }
+
+    [RelayCommand]
     private void AddActionToStep(object? parameter)
     {
         var step = parameter as SequenceStep ?? SelectedStep;
@@ -279,7 +358,11 @@ public sealed partial class SequencesViewModel : ObservableObject
     partial void OnSelectedSequenceChanged(RuleSequence? value)
     {
         SelectedStep = value?.Steps.OrderBy(s => s.Order).FirstOrDefault();
+        OnPropertyChanged(nameof(AvailableStepsForBranch));
     }
+
+    partial void OnSelectedStepChanged(SequenceStep? value) =>
+        OnPropertyChanged(nameof(AvailableStepsForBranch));
 
     partial void OnFilterTextChanged(string value) => RefreshView();
     partial void OnShowDisabledChanged(bool value) => RefreshView();

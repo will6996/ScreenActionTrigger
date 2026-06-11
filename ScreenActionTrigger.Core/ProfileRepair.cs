@@ -59,6 +59,12 @@ public static class ProfileRepair
             }
 
             RepairColorDetectionDefaults(step.Condition);
+
+            step.BranchSlots ??= [];
+            foreach (var slot in step.BranchSlots)
+                slot.Condition ??= new RuleCondition();
+
+            step.Condition.InventorySlotRegionIds ??= [];
         }
     }
 

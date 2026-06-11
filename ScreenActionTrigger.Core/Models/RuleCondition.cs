@@ -35,6 +35,12 @@ public sealed class RuleCondition
     public List<RuleCondition> SubConditions { get; set; } = new();
     public bool IsNegated { get; set; } = false;
 
+    // Inventory slot count
+    /// <summary>Regiões dos slots do inventário (1 região por slot).</summary>
+    public List<Guid> InventorySlotRegionIds { get; set; } = new();
+    public int RequiredSlotCount { get; set; } = 1;
+    public SlotCountMode SlotCountMode { get; set; } = SlotCountMode.AtLeast;
+
     public IEnumerable<string> GetAllTargetColors()
     {
         var colors = new List<string>();
@@ -59,6 +65,7 @@ public sealed class RuleCondition
         ConditionType.ChangeDetection  => $"Mudança > {MinChangePercentage:P0}",
         ConditionType.TemplateMatching => $"Template {TemplateId}",
         ConditionType.Composite        => $"{Operator} ({SubConditions.Count} condições)",
+        ConditionType.InventorySlotCount => $"{SlotCountMode} {RequiredSlotCount} slot(s) ocupado(s)",
         _ => Type.ToString()
     };
 }
@@ -72,7 +79,9 @@ public enum ConditionType
     [Description("Template (imagem)")]
     TemplateMatching,
     [Description("Condição Composta")]
-    Composite
+    Composite,
+    [Description("Contagem de Slots (Inventário)")]
+    InventorySlotCount
 }
 
 public enum LogicalOperator { None, And, Or }

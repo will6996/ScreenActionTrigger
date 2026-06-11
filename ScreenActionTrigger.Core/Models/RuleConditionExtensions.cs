@@ -5,8 +5,9 @@ public static class RuleConditionExtensions
     public static bool UsesColorDetection(this RuleCondition condition) =>
         condition.Type switch
         {
-            ConditionType.ColorDetection => true,
-            ConditionType.Composite      => condition.SubConditions.Any(UsesColorDetection),
-            _                            => false
+            ConditionType.ColorDetection       => true,
+            ConditionType.InventorySlotCount   => true,
+            ConditionType.Composite            => condition.SubConditions.Any(UsesColorDetection),
+            _                                  => false
         };
 }

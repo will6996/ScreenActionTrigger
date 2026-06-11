@@ -20,6 +20,11 @@ public interface ISequenceEngine
 
     IReadOnlyList<RuleSequence> GetSequences();
     int? GetCurrentStepIndex(Guid sequenceId);
+
+    /// <summary>Contexto de runtime para avaliar inventário e ramificações multi-região.</summary>
+    void SetRuntimeContext(
+        IReadOnlyList<MonitoredRegion> regions,
+        Func<MonitoredRegion, CancellationToken, Task<byte[]?>> captureRegion);
 }
 
 public sealed class SequenceStepTriggeredEventArgs : EventArgs

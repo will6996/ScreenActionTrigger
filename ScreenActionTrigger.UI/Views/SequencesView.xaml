@@ -65,7 +65,23 @@
                       SelectedItem="{Binding SelectedStep}">
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding Name}" FontSize="12"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Name}" FontSize="12"/>
+                            <TextBlock Text=" ↳" FontSize="10" Foreground="{StaticResource AccentPrimaryBrush}"
+                                       Margin="4,0,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding AdvanceMode}"
+                                                         Value="{x:Static models:SequenceAdvanceMode.Branch}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
@@ -83,8 +99,15 @@
 
         <GridSplitter Grid.Column="3" Width="6"/>
 
-        <!-- Editor do passo -->
-        <ScrollViewer Grid.Column="4" VerticalScrollBarVisibility="Auto" Margin="12,0,0,0">
+        <!-- Editor do passo + painel da sequência (lado a lado, sem sobreposição) -->
+        <Grid Grid.Column="4" Margin="12,0,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto"
+                          Margin="0,0,8,0">
             <StackPanel>
                 <StackPanel.Style>
                     <Style TargetType="StackPanel">
@@ -146,9 +169,189 @@
                              Width="80" HorizontalAlignment="Left"/>
                 </StackPanel>
 
+                <!-- Inventário: contagem de slots -->
+                <StackPanel Margin="0,0,0,8">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SelectedStep.Condition.Type}"
+                                             Value="{x:Static models:ConditionType.InventorySlotCount}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="Cor do item (slot ocupado)" Style="{StaticResource LabelStyle}"/>
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Text="{Binding SelectedStep.Condition.TargetColor, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="1" Content="🎯" Width="32" Margin="4,0,0,0"
+                                Style="{StaticResource BaseButtonStyle}"
+                                Command="{Binding PickColorFromScreenCommand}"/>
+                    </Grid>
+                    <TextBlock Text="Pixels mínimos por slot" Style="{StaticResource LabelStyle}"/>
+                    <TextBox Text="{Binding SelectedStep.Condition.MinMatchingPixels, UpdateSourceTrigger=PropertyChanged}"
+                             Width="80" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                    <TextBlock Text="Comparação" Style="{StaticResource LabelStyle}"/>
+                    <ComboBox ItemsSource="{x:Static models:SlotCountModeValues.All}"
+                              SelectedItem="{Binding SelectedStep.Condition.SlotCountMode}"
+                              Margin="0,0,0,6">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource EnumToStringConverter}}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="Quantidade de slots" Style="{StaticResource LabelStyle}"/>
+                    <TextBox Text="{Binding SelectedStep.Condition.RequiredSlotCount, UpdateSourceTrigger=PropertyChanged}"
+                             Width="80" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+                    <TextBlock Text="Regiões dos slots" Style="{StaticResource LabelStyle}"/>
+                    <TextBlock Foreground="{StaticResource TextMutedBrush}" FontSize="10"
+                               TextWrapping="Wrap" Margin="0,0,0,6"
+                               Text="Adicione 1 região por slot do inventário. O passo dispara quando a contagem bater com a condição."/>
+                    <ItemsControl ItemsSource="{Binding SelectedStep.Condition.InventorySlotRegionIds}"
+                                  Margin="0,0,0,6">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,0,0,4" LastChildFill="True">
+                                    <Button Content="✕" DockPanel.Dock="Right" Width="28" Height="24"
+                                            Style="{StaticResource DangerButtonStyle}" Margin="4,0,0,0"
+                                            Command="{Binding DataContext.RemoveInventorySlotCommand,
+                                                RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"/>
+                                    <TextBlock VerticalAlignment="Center" FontSize="11">
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{StaticResource RegionIdToNameConverter}">
+                                                <Binding/>
+                                                <Binding Path="DataContext.AvailableRegions"
+                                                         RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <ComboBox ItemsSource="{Binding AvailableRegions}"
+                              SelectedItem="{Binding PendingInventoryRegion}"
+                              DisplayMemberPath="Name" Margin="0,0,0,4"
+                              ToolTip="Selecione uma região e clique em Adicionar"/>
+                    <Button Content="+ Adicionar slot" Style="{StaticResource BaseButtonStyle}"
+                            Command="{Binding AddInventorySlotCommand}"/>
+                </StackPanel>
+
                 <TextBlock Text="Espera após ações (ms)" Style="{StaticResource LabelStyle}"/>
                 <TextBox Text="{Binding SelectedStep.DelayAfterMs, UpdateSourceTrigger=PropertyChanged}"
-                         Width="80" HorizontalAlignment="Left" Margin="0,0,0,12"/>
+                         Width="80" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+
+                <Separator Style="{StaticResource PanelSeparatorStyle}"/>
+
+                <TextBlock Text="AVANÇO / RAMIFICAÇÃO" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,6"/>
+                <TextBlock Text="Após concluir este passo" Style="{StaticResource LabelStyle}"/>
+                <ComboBox ItemsSource="{x:Static models:SequenceAdvanceModeValues.All}"
+                          SelectedItem="{Binding SelectedStep.AdvanceMode}" Margin="0,0,0,8">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource EnumToStringConverter}}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <StackPanel Margin="0,0,0,12">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SelectedStep.AdvanceMode}"
+                                             Value="{x:Static models:SequenceAdvanceMode.Branch}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Foreground="{StaticResource TextMutedBrush}" FontSize="10"
+                               TextWrapping="Wrap" Margin="0,0,0,8"
+                               Text="Slots avaliados em cascata: o primeiro que bater vai para o passo escolhido. Use 'Senão' como fallback."/>
+                    <DockPanel Margin="0,0,0,6" LastChildFill="False">
+                        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                            <Button Content="+ Se" Style="{StaticResource BaseButtonStyle}"
+                                    Command="{Binding AddBranchSlotCommand}" Margin="0,0,4,0"/>
+                            <Button Content="+ Senão" Style="{StaticResource BaseButtonStyle}"
+                                    Command="{Binding AddElseBranchSlotCommand}"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding SelectedStep.BranchSlots}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:SequenceBranchSlot}">
+                                <Border Background="{StaticResource BgCardBrush}"
+                                        BorderBrush="{StaticResource BgBorderBrush}"
+                                        BorderThickness="1" CornerRadius="6"
+                                        Padding="10" Margin="0,0,0,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBox Text="{Binding Label, UpdateSourceTrigger=PropertyChanged}"
+                                                     FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                            <TextBlock Text="Ir para passo" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox ItemsSource="{Binding DataContext.AvailableStepsForBranch,
+                                                    RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                      SelectedValuePath="Id" DisplayMemberPath="Name"
+                                                      SelectedValue="{Binding TargetStepId}" Margin="0,0,0,6"/>
+                                            <StackPanel>
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsElse}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Condição" Style="{StaticResource LabelStyle}"/>
+                                                <ComboBox ItemsSource="{x:Static models:ConditionTypeValues.All}"
+                                                          SelectedItem="{Binding Condition.Type}" Margin="0,0,0,6">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Converter={StaticResource EnumToStringConverter}}"/>
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                                <StackPanel Margin="0,0,0,4">
+                                                    <StackPanel.Style>
+                                                        <Style TargetType="StackPanel">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Condition.Type}"
+                                                                             Value="{x:Static models:ConditionType.ColorDetection}">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </StackPanel.Style>
+                                                    <TextBlock Text="Cor alvo" Style="{StaticResource LabelStyle}"/>
+                                                    <TextBox Text="{Binding Condition.TargetColor, UpdateSourceTrigger=PropertyChanged}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="🗑" Width="30" Height="30"
+                                                Style="{StaticResource DangerButtonStyle}"
+                                                Command="{Binding DataContext.RemoveBranchSlotCommand,
+                                                    RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
 
                 <Separator Style="{StaticResource PanelSeparatorStyle}"/>
 
@@ -240,30 +443,46 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </StackPanel>
-        </ScrollViewer>
+            </ScrollViewer>
 
-        <!-- Config da sequência selecionada -->
-        <Border Grid.Column="4" VerticalAlignment="Top" HorizontalAlignment="Right"
-                Background="{StaticResource BgCardBrush}" CornerRadius="6" Padding="10"
-                Margin="12,0,0,0" MaxWidth="280">
-            <Border.Style>
-                <Style TargetType="Border">
-                    <Setter Property="Visibility" Value="Collapsed"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding SelectedSequence, Converter={StaticResource NotNullToBoolConverter}}" Value="True">
-                            <Setter Property="Visibility" Value="Visible"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Border.Style>
-            <StackPanel DataContext="{Binding SelectedSequence}">
-                <TextBlock Text="Sequência" Style="{StaticResource LabelStyle}"/>
-                <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"/>
-                <CheckBox Content="Ativa" IsChecked="{Binding IsEnabled}" Margin="0,0,0,4"/>
-                <CheckBox Content="Repetir ao concluir" IsChecked="{Binding Loop}" Margin="0,0,0,6"/>
-                <TextBlock Text="Pausa entre passos (ms)" Style="{StaticResource LabelStyle}"/>
-                <TextBox Text="{Binding DelayBetweenStepsMs, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
-            </StackPanel>
-        </Border>
+            <!-- Painel da sequência (recolhível) -->
+            <Grid Grid.Column="1">
+                <Button VerticalAlignment="Top" HorizontalAlignment="Left"
+                        Width="22" Height="64" Padding="0"
+                        Style="{StaticResource BaseButtonStyle}"
+                        Command="{Binding ToggleSequencePanelCommand}"
+                        ToolTip="Recolher/expandir painel da sequência"
+                        Visibility="{Binding SelectedSequence, Converter={StaticResource NotNullToBoolConverter}}">
+                    <TextBlock FontSize="10" Text="{Binding IsSequencePanelExpanded, Converter={StaticResource PanelChevronConverter}}"/>
+                </Button>
+
+                <Border VerticalAlignment="Top" HorizontalAlignment="Right"
+                        Background="{StaticResource BgCardBrush}" CornerRadius="6" Padding="10"
+                        MinWidth="220" MaxWidth="280" Margin="24,0,0,0">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding SelectedSequence, Converter={StaticResource NotNullToBoolConverter}}" Value="True"/>
+                                        <Condition Binding="{Binding IsSequencePanelExpanded}" Value="True"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel DataContext="{Binding SelectedSequence}">
+                        <TextBlock Text="Sequência" Style="{StaticResource LabelStyle}"/>
+                        <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"/>
+                        <CheckBox Content="Ativa" IsChecked="{Binding IsEnabled}" Margin="0,0,0,4"/>
+                        <CheckBox Content="Repetir ao concluir" IsChecked="{Binding Loop}" Margin="0,0,0,6"/>
+                        <TextBlock Text="Pausa entre passos (ms)" Style="{StaticResource LabelStyle}"/>
+                        <TextBox Text="{Binding DelayBetweenStepsMs, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
     </Grid>
 </UserControl>

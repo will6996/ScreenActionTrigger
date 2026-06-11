@@ -17,5 +17,7 @@
     <conv:RulePlusActionConverter       x:Key="RulePlusActionConverter"/>
     <conv:StepPlusActionConverter       x:Key="StepPlusActionConverter"/>
     <conv:ActionTypeToMouseVisConverter x:Key="ActionTypeToMouseVisConverter"/>
+    <conv:RegionIdToNameConverter         x:Key="RegionIdToNameConverter"/>
+    <conv:PanelChevronConverter           x:Key="PanelChevronConverter"/>
     <BooleanToVisibilityConverter       x:Key="StdBoolToVisConverter"/>
 </ResourceDictionary>

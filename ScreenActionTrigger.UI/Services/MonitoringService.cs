@@ -60,6 +60,9 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
         await _capture.InitializeAsync(_cts.Token);
 
         _ruleEngine.LoadRules(profile.Rules);
+        _sequenceEngine.SetRuntimeContext(
+            profile.Regions,
+            (region, ct) => _capture.CaptureRegionAsync(region, ct));
         _sequenceEngine.LoadSequences(profile.Sequences);
         _vision.SetTemplates(profile.Templates);
         _overlay.UpdateRegions(profile.Regions);
@@ -140,7 +143,13 @@ public sealed class MonitoringService : IMonitoringService, IDisposable
             var needsColor = profile.Rules.Any(r =>
                     r.RegionId == region.Id && r.IsEnabled && r.Condition.UsesColorDetection())
                 || profile.Sequences.Any(s => s.IsEnabled && s.Steps.Any(st =>
-                    st.RegionId == region.Id && st.Condition.UsesColorDetection()));
+                    (st.RegionId == region.Id && st.Condition.UsesColorDetection())
+                    || (st.Condition.Type == ConditionType.InventorySlotCount
+                        && st.Condition.InventorySlotRegionIds.Contains(region.Id))
+                    || (st.AdvanceMode == SequenceAdvanceMode.Branch
+                        && st.BranchSlots.Any(b => !b.IsElse
+                            && b.Condition.Type == ConditionType.InventorySlotCount
+                            && b.Condition.InventorySlotRegionIds.Contains(region.Id)))));
 
             if (profile.Settings.GrayscaleProcessing && !needsColor)
                 frameData = await ConvertToGrayscaleAsync(frameData);

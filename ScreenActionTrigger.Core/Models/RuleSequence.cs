@@ -41,6 +41,10 @@ public sealed class SequenceStep
     public ObservableCollection<TriggerAction> Actions { get; set; } = new();
     /// <summary>Espera após executar as ações antes de avançar (ms).</summary>
     public int DelayAfterMs { get; set; } = 200;
+    /// <summary>Como avançar após concluir este passo.</summary>
+    public SequenceAdvanceMode AdvanceMode { get; set; } = SequenceAdvanceMode.Next;
+    /// <summary>Ramos if/else — usados quando AdvanceMode = Branch.</summary>
+    public List<SequenceBranchSlot> BranchSlots { get; set; } = new();
 
     public SequenceStep Clone() => new()
     {
@@ -50,6 +54,8 @@ public sealed class SequenceStep
         RegionId = RegionId,
         Condition = Condition,
         Actions = new ObservableCollection<TriggerAction>(Actions),
-        DelayAfterMs = DelayAfterMs
+        DelayAfterMs = DelayAfterMs,
+        AdvanceMode = AdvanceMode,
+        BranchSlots = BranchSlots.Select(b => b.Clone()).ToList()
     };
 }

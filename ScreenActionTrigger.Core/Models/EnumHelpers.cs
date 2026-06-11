@@ -27,3 +27,15 @@ public static class LogicalOperatorValues
     public static IReadOnlyList<LogicalOperator> All { get; } =
         Enum.GetValues<LogicalOperator>();
 }
+
+public static class SlotCountModeValues
+{
+    public static IReadOnlyList<SlotCountMode> All { get; } =
+        Enum.GetValues<SlotCountMode>();
+}
+
+public static class SequenceAdvanceModeValues
+{
+    public static IReadOnlyList<SequenceAdvanceMode> All { get; } =
+        Enum.GetValues<SequenceAdvanceMode>();
+}

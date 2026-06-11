@@ -10,6 +10,8 @@ public sealed class SequenceEngine : ISequenceEngine
     private readonly ILogger<SequenceEngine> _logger;
     private readonly List<RuleSequence> _sequences = new();
     private readonly Dictionary<Guid, SequenceState> _states = new();
+    private IReadOnlyList<MonitoredRegion> _regions = Array.Empty<MonitoredRegion>();
+    private Func<MonitoredRegion, CancellationToken, Task<byte[]?>>? _captureRegion;
 
     public event EventHandler<SequenceStepTriggeredEventArgs>? StepTriggered;
 
@@ -17,6 +19,14 @@ public sealed class SequenceEngine : ISequenceEngine
     {
         _vision = vision;
         _logger = logger;
+    }
+
+    public void SetRuntimeContext(
+        IReadOnlyList<MonitoredRegion> regions,
+        Func<MonitoredRegion, CancellationToken, Task<byte[]?>> captureRegion)
+    {
+        _regions = regions;
+        _captureRegion = captureRegion;
     }
 
     public void LoadSequences(IEnumerable<RuleSequence> sequences)
@@ -77,17 +87,18 @@ public sealed class SequenceEngine : ISequenceEngine
             }
 
             var step = steps[state.CurrentStepIndex];
-            if (step.RegionId != region.Id) continue;
+            if (!StepWatchesRegion(step, region.Id)) continue;
 
             try
             {
-                var result = await EvaluateConditionAsync(frameData, region, step.Condition, ct);
+                var result = await EvaluateStepConditionAsync(step, region, frameData, ct);
                 result.RegionName   = region.Name;
                 result.RegionBounds = region.Bounds;
 
                 if (!result.IsMatch) continue;
 
                 state.AwaitingCompletion = true;
+                state.LastTriggeredStep  = step;
                 _logger.LogDebug("Sequence '{Name}' step {Index} matched in '{Region}'",
                     sequence.Name, state.CurrentStepIndex + 1, region.Name);
 
@@ -112,14 +123,18 @@ public sealed class SequenceEngine : ISequenceEngine
         if (!_states.TryGetValue(sequenceId, out var state)) return;
 
         state.AwaitingCompletion = false;
-        state.CurrentStepIndex++;
         state.LastStepCompletedAt = DateTime.UtcNow;
 
         var sequence = _sequences.FirstOrDefault(s => s.Id == sequenceId);
         if (sequence is null) return;
 
-        var stepCount = sequence.OrderedSteps.Count();
-        if (state.CurrentStepIndex >= stepCount && !sequence.Loop)
+        var completedStep = state.LastTriggeredStep;
+        state.LastTriggeredStep = null;
+
+        var steps = sequence.OrderedSteps.ToList();
+        AdvanceAfterStep(state, sequence, steps, completedStep);
+
+        if (state.CurrentStepIndex >= steps.Count && !sequence.Loop)
             state.IsCompleted = true;
 
         _logger.LogDebug("Sequence '{Name}' advanced to step {Index}",
@@ -128,11 +143,187 @@ public sealed class SequenceEngine : ISequenceEngine
 
     public IReadOnlyList<RuleSequence> GetSequences() => _sequences.AsReadOnly();
 
+    private static bool StepWatchesRegion(SequenceStep step, Guid regionId)
+    {
+        if (step.Condition.Type == ConditionType.InventorySlotCount)
+        {
+            var slots = step.Condition.InventorySlotRegionIds;
+            return slots.Count == 0 || slots.Contains(regionId);
+        }
+
+        return step.RegionId == regionId;
+    }
+
+    private void AdvanceAfterStep(
+        SequenceState state,
+        RuleSequence sequence,
+        List<SequenceStep> steps,
+        SequenceStep? completedStep)
+    {
+        if (completedStep is null)
+        {
+            state.CurrentStepIndex++;
+            return;
+        }
+
+        switch (completedStep.AdvanceMode)
+        {
+            case SequenceAdvanceMode.Restart:
+                state.CurrentStepIndex = 0;
+                return;
+
+            case SequenceAdvanceMode.Branch:
+                var targetId = ResolveBranchTarget(completedStep, steps);
+                if (targetId is not null)
+                {
+                    var idx = steps.FindIndex(s => s.Id == targetId.Value);
+                    if (idx >= 0)
+                    {
+                        state.CurrentStepIndex = idx;
+                        return;
+                    }
+                }
+                state.CurrentStepIndex++;
+                return;
+
+            default:
+                state.CurrentStepIndex++;
+                return;
+        }
+    }
+
+    private Guid? ResolveBranchTarget(SequenceStep step, List<SequenceStep> steps)
+    {
+        SequenceBranchSlot? elseSlot = null;
+
+        foreach (var slot in step.BranchSlots)
+        {
+            if (slot.IsElse)
+            {
+                elseSlot = slot;
+                continue;
+            }
+
+            if (slot.TargetStepId is null) continue;
+
+            if (EvaluateBranchSlotSync(step, slot))
+                return slot.TargetStepId;
+        }
+
+        return elseSlot?.TargetStepId;
+    }
+
+    private bool EvaluateBranchSlotSync(SequenceStep parentStep, SequenceBranchSlot slot)
+    {
+        try
+        {
+            return EvaluateBranchSlotAsync(parentStep, slot, CancellationToken.None)
+                .GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Branch slot '{Label}' evaluation failed", slot.Label);
+            return false;
+        }
+    }
+
+    private async Task<bool> EvaluateBranchSlotAsync(
+        SequenceStep parentStep, SequenceBranchSlot slot, CancellationToken ct)
+    {
+        if (slot.IsElse) return false;
+
+        var condition = slot.Condition;
+        if (condition.Type == ConditionType.InventorySlotCount)
+        {
+            var result = await EvaluateInventorySlotCountAsync(condition, ct);
+            return result.IsMatch;
+        }
+
+        var region = _regions.FirstOrDefault(r => r.Id == parentStep.RegionId);
+        if (region is null || _captureRegion is null) return false;
+
+        var frame = await _captureRegion(region, ct);
+        if (frame is null) return false;
+
+        var detection = await EvaluateConditionAsync(frame, region, condition, ct);
+        return detection.IsMatch;
+    }
+
+    private async Task<DetectionResult> EvaluateStepConditionAsync(
+        SequenceStep step,
+        MonitoredRegion region,
+        byte[] frameData,
+        CancellationToken ct)
+    {
+        if (step.Condition.Type == ConditionType.InventorySlotCount)
+            return await EvaluateInventorySlotCountAsync(step.Condition, ct);
+
+        return await EvaluateConditionAsync(frameData, region, step.Condition, ct);
+    }
+
+    private async Task<DetectionResult> EvaluateInventorySlotCountAsync(
+        RuleCondition condition,
+        CancellationToken ct)
+    {
+        if (_captureRegion is null || condition.InventorySlotRegionIds.Count == 0)
+            return DetectionResult.NoMatch(Guid.Empty, ConditionType.InventorySlotCount);
+
+        var colorCondition = new RuleCondition
+        {
+            Type = ConditionType.ColorDetection,
+            TargetColor = condition.TargetColor,
+            TargetColors = condition.TargetColors,
+            ColorTolerance = condition.ColorTolerance,
+            MinColorPercentage = condition.MinColorPercentage,
+            MinMatchingPixels = condition.MinMatchingPixels,
+            ExcludeDarkPixels = condition.ExcludeDarkPixels,
+            DarkPixelThreshold = condition.DarkPixelThreshold
+        };
+
+        var occupied = 0;
+        Guid firstRegionId = condition.InventorySlotRegionIds[0];
+
+        foreach (var slotId in condition.InventorySlotRegionIds)
+        {
+            var slotRegion = _regions.FirstOrDefault(r => r.Id == slotId);
+            if (slotRegion is null) continue;
+
+            var frame = await _captureRegion(slotRegion, ct);
+            if (frame is null) continue;
+
+            var result = await _vision.EvaluateAsync(frame, slotRegion, colorCondition, ct);
+            if (result.IsMatch)
+                occupied++;
+        }
+
+        var required = condition.RequiredSlotCount;
+        var isMatch = condition.SlotCountMode switch
+        {
+            SlotCountMode.Exactly  => occupied == required,
+            SlotCountMode.AtMost   => occupied <= required,
+            _                      => occupied >= required
+        };
+
+        return new DetectionResult
+        {
+            RegionId = firstRegionId,
+            IsMatch = isMatch,
+            Confidence = condition.InventorySlotRegionIds.Count > 0
+                ? (double)occupied / condition.InventorySlotRegionIds.Count
+                : 0,
+            MatchPixelCount = occupied,
+            DetectionType = ConditionType.InventorySlotCount
+        };
+    }
+
     private async Task<DetectionResult> EvaluateConditionAsync(
         byte[] frameData, MonitoredRegion region, RuleCondition condition, CancellationToken ct)
     {
         if (condition.Type == ConditionType.Composite)
             return await EvaluateCompositeAsync(frameData, region, condition, ct);
+
+        if (condition.Type == ConditionType.InventorySlotCount)
+            return await EvaluateInventorySlotCountAsync(condition, ct);
 
         var result = await _vision.EvaluateAsync(frameData, region, condition, ct);
         return condition.IsNegated
@@ -195,6 +386,7 @@ public sealed class SequenceEngine : ISequenceEngine
         public bool AwaitingCompletion { get; set; }
         public bool IsCompleted { get; set; }
         public DateTime? LastStepCompletedAt { get; set; }
+        public SequenceStep? LastTriggeredStep { get; set; }
 
         public void Reset()
         {
@@ -202,6 +394,7 @@ public sealed class SequenceEngine : ISequenceEngine
             AwaitingCompletion = false;
             IsCompleted = false;
             LastStepCompletedAt = null;
+            LastTriggeredStep = null;
         }
     }
 }
